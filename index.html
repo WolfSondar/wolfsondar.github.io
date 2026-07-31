@@ -153,7 +153,6 @@
     font-size:11.5px;font-weight:600;
   }
   .badge.ativo{background:var(--green-soft);color:var(--green);}
-  .badge.vencendo{background:var(--amber-soft);color:#c07f16;}
   .badge.vencido{background:var(--red-soft);color:var(--red);}
   .badge.outro{background:#eef1f7;color:var(--slate-600);}
   .days{display:flex;align-items:center;gap:8px;min-width:120px;}
@@ -198,7 +197,7 @@
   <div class="config-card">
     <button class="btn btn-primary" id="btnRefresh">Atualizar agora</button>
     <div class="config-hint">
-      Planilha conectada: <strong>Controle de Condutores</strong> — filiais: <code>CONSELHEIRO LAFAIETE</code>, <code>CONTAGEM</code>.
+      Planilha conectada: <strong>Controle de Condutores</strong> — aba <code>CONDUTORES</code>.
       Atualiza sozinho a cada 5 minutos.
     </div>
   </div>
@@ -227,11 +226,6 @@
         <div class="v" id="stDerAtivo">0</div>
         <div class="bar"><i id="barDerAtivo" style="width:0%"></i></div>
       </div>
-      <div class="stat amber">
-        <div class="k">DER vencendo</div>
-        <div class="v" id="stDerVencendo">0</div>
-        <div class="bar"><i id="barDerVencendo" style="width:0%"></i></div>
-      </div>
       <div class="stat red">
         <div class="k">DER vencido</div>
         <div class="v" id="stDerVencido">0</div>
@@ -246,6 +240,11 @@
         <div class="k">CNH vencida</div>
         <div class="v" id="stCnhVencido">0</div>
         <div class="bar"><i id="barCnhVencido" style="width:0%"></i></div>
+      </div>
+      <div class="stat amber">
+        <div class="k">Com problemas</div>
+        <div class="v" id="stProblemas">0</div>
+        <div class="bar"><i id="barProblemas" style="width:0%"></i></div>
       </div>
     </section>
 
@@ -268,7 +267,6 @@
       <select id="filterStatusDer">
         <option value="">DER — todos</option>
         <option value="ATIVO">DER ativo</option>
-        <option value="VENCENDO">DER vencendo (&lt;30d)</option>
         <option value="VENCIDO">DER vencido</option>
       </select>
       <select id="filterStatusCnh">
@@ -306,10 +304,7 @@
 (function(){
   // Planilha fixa — Controle de Condutores
   const SHEET_ID = '1V-yh0iUzolsuUw6s7GKIwo37Vdgpbn8qr7kB_CZ-hHE';
-  // Cada aba = uma filial. Para adicionar uma nova unidade, crie a aba na
-  // planilha com o nome da filial e inclua o mesmo nome nesta lista.
-  const SHEET_NAME = 'CONSELHEIRO LAFAIETE';
-  const SHEET_TABS = ['CONSELHEIRO LAFAIETE', 'CONTAGEM'];
+  const SHEET_NAME = 'CONDUTORES';
 
   const els = {
     btnRefresh: document.getElementById('btnRefresh'),
