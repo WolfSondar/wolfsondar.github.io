@@ -153,6 +153,7 @@
     font-size:11.5px;font-weight:600;
   }
   .badge.ativo{background:var(--green-soft);color:var(--green);}
+  .badge.vencendo{background:var(--amber-soft);color:#c07f16;}
   .badge.vencido{background:var(--red-soft);color:var(--red);}
   .badge.outro{background:#eef1f7;color:var(--slate-600);}
   .days{display:flex;align-items:center;gap:8px;min-width:120px;}
@@ -184,7 +185,7 @@
     <div class="road-title">
       <span class="eyebrow">Viação · Gestão de Condutores</span>
       <h1>Painel de Condutores</h1>
-      <p>DER e CNH em um único painel, direto da planilha.</p>
+      <p>DER e CNH de todas as filiais, direto da planilha.</p>
     </div>
     <div class="road-status">
       <span class="dot off" id="statusDot"></span>
@@ -197,7 +198,7 @@
   <div class="config-card">
     <button class="btn btn-primary" id="btnRefresh">Atualizar agora</button>
     <div class="config-hint">
-      Planilha conectada: <strong>Controle de Condutores</strong> — aba <code>CONDUTORES</code>.
+      Planilha conectada: <strong>Controle de Condutores</strong> — filiais: <code>CONSELHEIRO LAFAIETE</code>, <code>CONTAGEM</code>.
       Atualiza sozinho a cada 5 minutos.
     </div>
   </div>
@@ -226,6 +227,11 @@
         <div class="v" id="stDerAtivo">0</div>
         <div class="bar"><i id="barDerAtivo" style="width:0%"></i></div>
       </div>
+      <div class="stat amber">
+        <div class="k">DER vencendo</div>
+        <div class="v" id="stDerVencendo">0</div>
+        <div class="bar"><i id="barDerVencendo" style="width:0%"></i></div>
+      </div>
       <div class="stat red">
         <div class="k">DER vencido</div>
         <div class="v" id="stDerVencido">0</div>
@@ -240,11 +246,6 @@
         <div class="k">CNH vencida</div>
         <div class="v" id="stCnhVencido">0</div>
         <div class="bar"><i id="barCnhVencido" style="width:0%"></i></div>
-      </div>
-      <div class="stat amber">
-        <div class="k">Com problemas</div>
-        <div class="v" id="stProblemas">0</div>
-        <div class="bar"><i id="barProblemas" style="width:0%"></i></div>
       </div>
     </section>
 
@@ -267,6 +268,7 @@
       <select id="filterStatusDer">
         <option value="">DER — todos</option>
         <option value="ATIVO">DER ativo</option>
+        <option value="VENCENDO">DER vencendo (&lt;30d)</option>
         <option value="VENCIDO">DER vencido</option>
       </select>
       <select id="filterStatusCnh">
@@ -304,7 +306,9 @@
 (function(){
   // Planilha fixa — Controle de Condutores
   const SHEET_ID = '1V-yh0iUzolsuUw6s7GKIwo37Vdgpbn8qr7kB_CZ-hHE';
-  const SHEET_NAME = 'CONDUTORES';
+  // Cada aba = uma filial. Para adicionar uma nova unidade, crie a aba na
+  // planilha com o nome da filial e inclua o mesmo nome nesta lista.
+  const SHEET_TABS = ['CONSELHEIRO LAFAIETE', 'CONTAGEM'];
 
   const els = {
     btnRefresh: document.getElementById('btnRefresh'),
@@ -376,69 +380,91 @@
     return Math.round((d - now) / 86400000);
   }
 
-  function normalizeStatus(text, days){
+  function normalizeStatus(text, days, vencendoThreshold){
     const t = (text||'').toString().trim().toUpperCase();
-    if(t.includes('VENC')) return 'VENCIDO';
-    if(t.includes('ATIV')) return 'ATIVO';
-    if(days !== null && days < 0) return 'VENCIDO';
-    if(days !== null && days >= 0) return 'ATIVO';
-    return 'OUTRO';
+    let base;
+    if(t.includes('VENCID')) base = 'VENCIDO';
+    else if(t.includes('ATIV')) base = 'ATIVO';
+    else if(days !== null && !isNaN(days) && days < 0) base = 'VENCIDO';
+    else if(days !== null && !isNaN(days) && days >= 0) base = 'ATIVO';
+    else base = 'OUTRO';
+    if(base === 'ATIVO' && vencendoThreshold != null && days !== null && !isNaN(days) && days < vencendoThreshold){
+      return 'VENCENDO';
+    }
+    return base;
+  }
+
+  function parseTabRows(data, tabName){
+    const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
+    const idx = (name) => cols.findIndex(c => c === name);
+
+    const iNome = idx('MOTORISTAS');
+    const iCpf = idx('CPF');
+    const iFuncao = idx('FUNÇÃO');
+    const iFilial = idx('FILIAL');
+    const iDerVal = idx('DER VALIDADE');
+    const iDerDias = idx('DIAS REST');
+    const iDerStatus = idx('STATUS DEER');
+    const iCnhVal = idx('CNH VALIDADE');
+    const iCnhDias = idx('DIAS REST2');
+    const iCnhStatus = idx('STATUS CNH');
+    const iProblemas = idx('PROBLEMAS');
+
+    return data.table.rows
+      .map(r => r.c)
+      .filter(c => c && c[iNome] && cellText(c[iNome]))
+      .map(c => {
+        const derValDate = parseGvizDate(c[iDerVal]);
+        const cnhValDate = parseGvizDate(c[iCnhVal]);
+        const derDiasCalc = derValDate ? daysUntil(derValDate) : (iDerDias>-1 ? Number(cellText(c[iDerDias])) : null);
+        const cnhDiasCalc = cnhValDate ? daysUntil(cnhValDate) : (iCnhDias>-1 ? Number(cellText(c[iCnhDias])) : null);
+        return {
+          motorista: cellText(c[iNome]),
+          cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
+          funcao: iFuncao>-1 ? cellText(c[iFuncao]) : '',
+          filial: (iFilial>-1 && cellText(c[iFilial])) ? cellText(c[iFilial]) : tabName,
+          derVal: derValDate,
+          derDias: isNaN(derDiasCalc) ? null : derDiasCalc,
+          derStatus: normalizeStatus(iDerStatus>-1 ? cellText(c[iDerStatus]) : '', derDiasCalc, 30),
+          cnhVal: cnhValDate,
+          cnhDias: isNaN(cnhDiasCalc) ? null : cnhDiasCalc,
+          cnhStatus: normalizeStatus(iCnhStatus>-1 ? cellText(c[iCnhStatus]) : '', cnhDiasCalc),
+          problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
+        };
+      });
+  }
+
+  async function fetchTab(tabName){
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}&_=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status + ' em ' + tabName);
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    const data = JSON.parse(jsonStr);
+    if(!data.table || !data.table.rows) throw new Error('Formato inesperado em ' + tabName);
+    return parseTabRows(data, tabName);
   }
 
   async function loadData(){
     setStatus('off','Carregando…');
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&_=${Date.now()}`;
-
     try{
-      const res = await fetch(url);
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-      const data = JSON.parse(jsonStr);
-      if(!data.table || !data.table.rows) throw new Error('Formato inesperado');
+      const results = await Promise.allSettled(SHEET_TABS.map(fetchTab));
+      let merged = [];
+      let failed = [];
+      results.forEach((r, i) => {
+        if(r.status === 'fulfilled') merged = merged.concat(r.value);
+        else failed.push(SHEET_TABS[i]);
+      });
+      if(merged.length === 0) throw new Error('Nenhuma aba pôde ser lida (' + (failed.join(', ') || 'verifique os nomes das abas') + ')');
 
-      const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
-      const idx = (name) => cols.findIndex(c => c === name);
-
-      const iNome = idx('MOTORISTAS');
-      const iCpf = idx('CPF');
-      const iFuncao = idx('FUNÇÃO');
-      const iFilial = idx('FILIAL');
-      const iDerVal = idx('DER VALIDADE');
-      const iDerDias = idx('DIAS REST');
-      const iDerStatus = idx('STATUS DEER');
-      const iCnhVal = idx('CNH VALIDADE');
-      const iCnhDias = idx('DIAS REST2');
-      const iCnhStatus = idx('STATUS CNH');
-      const iProblemas = idx('PROBLEMAS');
-
-      rawRows = data.table.rows
-        .map(r => r.c)
-        .filter(c => c && c[iNome] && cellText(c[iNome]))
-        .map(c => {
-          const derValDate = parseGvizDate(c[iDerVal]);
-          const cnhValDate = parseGvizDate(c[iCnhVal]);
-          const derDiasCalc = derValDate ? daysUntil(derValDate) : (iDerDias>-1 ? Number(cellText(c[iDerDias])) : null);
-          const cnhDiasCalc = cnhValDate ? daysUntil(cnhValDate) : (iCnhDias>-1 ? Number(cellText(c[iCnhDias])) : null);
-          return {
-            motorista: cellText(c[iNome]),
-            cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
-            funcao: iFuncao>-1 ? cellText(c[iFuncao]) : '',
-            filial: iFilial>-1 ? cellText(c[iFilial]) : 'Não informado',
-            derVal: derValDate,
-            derDias: isNaN(derDiasCalc) ? null : derDiasCalc,
-            derStatus: normalizeStatus(iDerStatus>-1 ? cellText(c[iDerStatus]) : '', derDiasCalc),
-            cnhVal: cnhValDate,
-            cnhDias: isNaN(cnhDiasCalc) ? null : cnhDiasCalc,
-            cnhStatus: normalizeStatus(iCnhStatus>-1 ? cellText(c[iCnhStatus]) : '', cnhDiasCalc),
-            problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
-          };
-        });
-
+      rawRows = merged;
       els.empty.classList.add('hidden');
       els.error.classList.add('hidden');
       els.dash.classList.remove('hidden');
-      setStatus('ok', 'Conectado · ' + new Date().toLocaleTimeString('pt-BR'));
+      const ts = new Date().toLocaleTimeString('pt-BR');
+      setStatus('ok', failed.length
+        ? `Conectado (${SHEET_TABS.length - failed.length}/${SHEET_TABS.length} filiais) · ${ts}`
+        : `Conectado · ${ts}`);
 
       buildFilialOptions();
       render();
@@ -450,7 +476,7 @@
       els.dash.classList.add('hidden');
       els.empty.classList.add('hidden');
       els.error.classList.remove('hidden');
-      els.errorDetail.textContent = 'Detalhe técnico: ' + err.message + '. Se você abriu este arquivo dando duplo clique nele (endereço começando com "file://"), o navegador bloqueia esse tipo de requisição por segurança — hospede o arquivo em um servidor (GitHub Pages, Netlify, ou o servidor da empresa) e o carregamento deve funcionar. Confira também se a planilha está com o link liberado e se o nome da aba é exatamente "CONDUTORES".';
+      els.errorDetail.textContent = 'Detalhe técnico: ' + err.message + '. Se você abriu este arquivo dando duplo clique nele (endereço começando com "file://"), o navegador bloqueia esse tipo de requisição por segurança — hospede o arquivo em um servidor (GitHub Pages, Netlify, ou o servidor da empresa). Confira também se a planilha está com o link liberado e se os nomes das abas em SHEET_TABS batem exatamente com os nomes reais.';
       setStatus('err','Falha ao carregar');
     }
   }
@@ -473,8 +499,8 @@
     let color = 'var(--green)';
     if(days < 0) color = 'var(--red)';
     else if(days <= 30) color = 'var(--amber)';
-    const pct = Math.max(4, Math.min(100, (Math.min(days,180)/180)*100));
-    return {pct, color, label: days < 0 ? `${Math.abs(days)}d venc.` : `${days}d`};
+    const pct = days < 0 ? 100 : Math.max(4, Math.min(100, (Math.min(days,180)/180)*100));
+    return {pct, color, label: days < 0 ? 'Vencido' : `${days}d`};
   }
 
   function render(){
@@ -506,22 +532,22 @@
     // stats (sobre o total, não sobre o filtro, para dar visão geral real)
     const total = rawRows.length;
     const derAtivo = rawRows.filter(r=>r.derStatus==='ATIVO').length;
+    const derVencendo = rawRows.filter(r=>r.derStatus==='VENCENDO').length;
     const derVencido = rawRows.filter(r=>r.derStatus==='VENCIDO').length;
     const cnhAtivo = rawRows.filter(r=>r.cnhStatus==='ATIVO').length;
     const cnhVencido = rawRows.filter(r=>r.cnhStatus==='VENCIDO').length;
-    const comProblema = rawRows.filter(r=> (r.problemas||'').toUpperCase().includes('SIM') || (r.derStatus==='VENCIDO'&&r.cnhStatus==='VENCIDO')).length;
 
     document.getElementById('stTotal').textContent = total;
     document.getElementById('stDerAtivo').textContent = derAtivo;
+    document.getElementById('stDerVencendo').textContent = derVencendo;
     document.getElementById('stDerVencido').textContent = derVencido;
     document.getElementById('stCnhAtivo').textContent = cnhAtivo;
     document.getElementById('stCnhVencido').textContent = cnhVencido;
-    document.getElementById('stProblemas').textContent = comProblema;
     document.getElementById('barDerAtivo').style.width = total? (derAtivo/total*100)+'%':'0%';
+    document.getElementById('barDerVencendo').style.width = total? (derVencendo/total*100)+'%':'0%';
     document.getElementById('barDerVencido').style.width = total? (derVencido/total*100)+'%':'0%';
     document.getElementById('barCnhAtivo').style.width = total? (cnhAtivo/total*100)+'%':'0%';
     document.getElementById('barCnhVencido').style.width = total? (cnhVencido/total*100)+'%':'0%';
-    document.getElementById('barProblemas').style.width = total? (comProblema/total*100)+'%':'0%';
 
     els.countPill.textContent = `${rows.length} registro${rows.length===1?'':'s'} (de ${total})`;
 
@@ -580,6 +606,7 @@
     });
 
     const derA = rows.filter(r=>r.derStatus==='ATIVO').length;
+    const derP = rows.filter(r=>r.derStatus==='VENCENDO').length;
     const derV = rows.filter(r=>r.derStatus==='VENCIDO').length;
     const cnhA = rows.filter(r=>r.cnhStatus==='ATIVO').length;
     const cnhV = rows.filter(r=>r.cnhStatus==='VENCIDO').length;
@@ -588,8 +615,8 @@
     charts.status = new Chart(document.getElementById('chartStatus'), {
       type:'doughnut',
       data:{
-        labels:['DER ativo','DER vencido','CNH ativa','CNH vencida'],
-        datasets:[{ data:[derA,derV,cnhA,cnhV], backgroundColor:['#2bad7d','#e5484d','#1e4278','#f2a93b'], borderWidth:0 }]
+        labels:['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida'],
+        datasets:[{ data:[derA,derP,derV,cnhA,cnhV], backgroundColor:['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16'], borderWidth:0 }]
       },
       options:{
         responsive:true, maintainAspectRatio:false, cutout:'62%',
