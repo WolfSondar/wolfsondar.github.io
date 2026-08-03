@@ -173,25 +173,34 @@
   .toolbar{
     display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;
   }
-  .toolbar input[type="text"]{
-    flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:9px;padding:10px 14px;
-    font-size:13px;font-family:var(--font-body);outline:none;
+  .search-wrap{position:relative;flex:1;min-width:220px;}
+  .search-wrap input[type="text"]{
+    width:100%;border:1.5px solid var(--line);border-radius:9px;padding:10px 34px 10px 14px;
+    font-size:13px;font-family:var(--font-body);outline:none;box-sizing:border-box;
   }
-  .toolbar input[type="text"]:focus{border-color:var(--navy-700);}
+  .search-wrap input[type="text"]:focus{border-color:var(--navy-700);}
+  .search-clear{
+    display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    border:none;background:var(--line);color:var(--slate-600);width:20px;height:20px;
+    border-radius:50%;font-size:13px;line-height:1;cursor:pointer;align-items:center;justify-content:center;
+  }
+  .search-clear:hover{background:var(--slate-400);color:#fff;}
   select{
     border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-size:13px;
     font-family:var(--font-body);background:#fff;color:var(--slate-900);outline:none;
   }
-  .table-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
-  table{width:100%;border-collapse:collapse;font-size:13px;}
+  .table-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{width:100%;min-width:820px;border-collapse:collapse;font-size:13px;}
   thead th{
     text-align:left;padding:12px 14px;background:var(--navy-950);color:var(--slate-400);
     font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
     position:sticky;top:0;cursor:pointer;user-select:none;white-space:nowrap;
   }
   thead th:hover{color:#fff;}
-  thead th span.arrow{margin-left:4px;opacity:.6;}
-  tbody tr{border-top:1px solid var(--line);}
+  thead th span.arrow{margin-left:4px;opacity:.35;display:inline-block;font-size:10px;}
+  thead th.sorted{color:#fff;}
+  thead th.sorted span.arrow{opacity:1;color:var(--amber);}
+  tbody tr{border-top:1px solid var(--line);cursor:pointer;}
   tbody tr:hover{background:#f8faff;}
   td{padding:11px 14px;color:var(--slate-900);white-space:nowrap;}
   td.name{font-weight:600;}
@@ -208,6 +217,39 @@
   .days .track i{display:block;height:100%;border-radius:3px;}
   .days span.n{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
   tfoot td{padding:14px;text-align:center;color:var(--slate-400);font-size:12px;}
+
+  /* ---------- modal de detalhes do condutor ---------- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(10,25,48,.55);display:none;
+    align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal-card{
+    background:#fff;border-radius:var(--radius);max-width:640px;width:100%;
+    max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(10,25,48,.35);
+  }
+  .modal-head{
+    background:var(--navy-900);color:#fff;padding:22px 26px;border-radius:var(--radius) var(--radius) 0 0;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  }
+  .modal-head h2{font-family:var(--font-display);margin:0 0 4px;font-size:19px;}
+  .modal-head p{margin:0;color:var(--slate-400);font-size:13px;}
+  .modal-close{
+    background:rgba(255,255,255,.12);border:none;color:#fff;width:30px;height:30px;
+    border-radius:50%;font-size:16px;cursor:pointer;flex:none;
+  }
+  .modal-close:hover{background:rgba(255,255,255,.24);}
+  .modal-body{padding:22px 26px 26px;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:18px;}
+  .modal-field{display:flex;flex-direction:column;gap:3px;}
+  .modal-field .lbl{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--slate-600);}
+  .modal-field .val{font-size:14px;color:var(--slate-900);font-weight:600;}
+  .modal-section-title{
+    font-family:var(--font-display);font-size:13px;color:var(--navy-800);
+    margin:20px 0 10px;padding-top:14px;border-top:1px solid var(--line);
+  }
+  .modal-note{background:var(--bg);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--slate-900);line-height:1.5;}
+  @media (max-width:600px){ .modal-grid{grid-template-columns:1fr;} }
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
   @media (max-width:1100px){
@@ -308,13 +350,16 @@
       </div>
       <div class="panel">
         <h3>Situação documental</h3>
-        <p class="sub">DER x CNH — ativos e vencidos</p>
+        <p class="sub" id="chartStatusSub">DER x CNH — visão geral</p>
         <canvas id="chartStatus"></canvas>
       </div>
     </section>
 
     <div class="toolbar">
-      <input type="text" id="search" placeholder="Buscar por nome, CPF ou matrícula…">
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Buscar por nome, CPF, matrícula ou nº CNH…">
+        <button type="button" class="search-clear" id="searchClear">×</button>
+      </div>
       <select id="filterStatusDer">
         <option value="">DER — todos</option>
         <option value="ATIVO">DER ativo</option>
@@ -357,6 +402,46 @@
   </div>
 </main>
 
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2 id="mdNome">—</h2>
+        <p id="mdSub">—</p>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="modal-field"><span class="lbl">Matrícula</span><span class="val" id="mdMat">—</span></div>
+        <div class="modal-field"><span class="lbl">CPF</span><span class="val" id="mdCpf">—</span></div>
+        <div class="modal-field"><span class="lbl">Sexo</span><span class="val" id="mdSexo">—</span></div>
+        <div class="modal-field"><span class="lbl">Admissão</span><span class="val" id="mdAdmissao">—</span></div>
+      </div>
+
+      <div class="modal-section-title">Documentação</div>
+      <div class="modal-grid">
+        <div class="modal-field"><span class="lbl">DER validade</span><span class="val" id="mdDerVal">—</span></div>
+        <div class="modal-field"><span class="lbl">Status DER</span><span class="val" id="mdDerStatus">—</span></div>
+        <div class="modal-field"><span class="lbl">CNH nº</span><span class="val" id="mdCnhNum">—</span></div>
+        <div class="modal-field"><span class="lbl">CNH validade</span><span class="val" id="mdCnhVal">—</span></div>
+        <div class="modal-field"><span class="lbl">Status CNH</span><span class="val" id="mdCnhStatus">—</span></div>
+      </div>
+
+      <div class="modal-section-title">Peticionamento</div>
+      <div class="modal-grid">
+        <div class="modal-field"><span class="lbl">Peticionado</span><span class="val" id="mdPeticionado">—</span></div>
+        <div class="modal-field"><span class="lbl">Data peticionamento</span><span class="val" id="mdDataPet">—</span></div>
+        <div class="modal-field"><span class="lbl">Nº peticionamento</span><span class="val" id="mdNumPet">—</span></div>
+      </div>
+
+      <div class="modal-section-title">Problemas &amp; observações</div>
+      <div class="modal-note" id="mdObs">—</div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 (function(){
   // Planilha fixa — Controle de Condutores
@@ -383,9 +468,13 @@
     pgPrev: document.getElementById('pgPrev'),
     pgNext: document.getElementById('pgNext'),
     pgInfo: document.getElementById('pgInfo'),
+    searchClear: document.getElementById('searchClear'),
+    modalBackdrop: document.getElementById('modalBackdrop'),
+    modalClose: document.getElementById('modalClose'),
   };
 
   let rawRows = [];      // dados normalizados
+  let currentPageRows = []; // linhas exibidas na página atual da tabela
   let sortState = {key:'motorista', dir:1};
   let charts = {filial:null, status:null};
   let refreshTimer = null;
@@ -393,7 +482,21 @@
   let currentPage = 1;
 
   els.btnRefresh.addEventListener('click', () => loadData());
-  els.search.addEventListener('input', () => { currentPage = 1; render(); });
+  els.search.addEventListener('input', () => {
+    els.searchClear.style.display = els.search.value ? 'flex' : 'none';
+    currentPage = 1;
+    render();
+  });
+  els.searchClear.addEventListener('click', () => {
+    els.search.value = '';
+    els.searchClear.style.display = 'none';
+    currentPage = 1;
+    els.search.focus();
+    render();
+  });
+  els.modalClose.addEventListener('click', closeModal);
+  els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeModal(); });
   els.filterFilial.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
   els.filterStatusDer.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
   els.filterStatusCnh.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
@@ -494,18 +597,27 @@
   function parseTabRows(data, tabName){
     const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
     const idx = (name) => cols.findIndex(c => c === name);
+    const idxAny = (...names) => { for(const n of names){ const i = idx(n); if(i>-1) return i; } return -1; };
 
     const iNome = idx('MOTORISTAS');
     const iCpf = idx('CPF');
+    const iMat = idxAny('MAT.', 'MATRÍCULA', 'MAT');
+    const iAdmissao = idx('ADMISSÃO');
     const iFuncao = idx('FUNÇÃO');
     const iFilial = idx('FILIAL');
+    const iSexo = idx('SEXO');
     const iDerVal = idx('DER VALIDADE');
     const iDerDias = idx('DIAS REST');
     const iDerStatus = idx('STATUS DEER');
+    const iCnhNum = idxAny('Nº CNH', 'N° CNH', 'NUMERO CNH', 'NÚMERO CNH');
     const iCnhVal = idx('CNH VALIDADE');
     const iCnhDias = idx('DIAS REST2');
     const iCnhStatus = idx('STATUS CNH');
+    const iPeticionado = idx('PETICIONADO');
+    const iDataPet = idx('DATA PETICIONAMENTO');
+    const iNumPet = idxAny('N. PETICIONAMENTO', 'Nº PETICIONAMENTO', 'NUMERO PETICIONAMENTO');
     const iProblemas = idx('PROBLEMAS');
+    const iObs = idx('OBSERVAÇÃO');
 
     return data.table.rows
       .map(r => r.c)
@@ -513,20 +625,30 @@
       .map(c => {
         const derValDate = parseGvizDate(c[iDerVal]);
         const cnhValDate = parseGvizDate(c[iCnhVal]);
+        const admissaoDate = iAdmissao>-1 ? parseGvizDate(c[iAdmissao]) : null;
+        const dataPetDate = iDataPet>-1 ? parseGvizDate(c[iDataPet]) : null;
         const derDiasCalc = derValDate ? daysUntil(derValDate) : (iDerDias>-1 ? Number(cellText(c[iDerDias])) : null);
         const cnhDiasCalc = cnhValDate ? daysUntil(cnhValDate) : (iCnhDias>-1 ? Number(cellText(c[iCnhDias])) : null);
         return {
           motorista: cellText(c[iNome]),
           cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
+          matricula: iMat>-1 ? cellText(c[iMat]) : '',
+          admissao: admissaoDate,
           funcao: iFuncao>-1 ? cellText(c[iFuncao]) : '',
           filial: tabName,
+          sexo: iSexo>-1 ? cellText(c[iSexo]) : '',
           derVal: derValDate,
           derDias: isNaN(derDiasCalc) ? null : derDiasCalc,
           derStatus: normalizeStatus(iDerStatus>-1 ? cellText(c[iDerStatus]) : '', derDiasCalc, 30),
+          cnhNumero: iCnhNum>-1 ? cellText(c[iCnhNum]) : '',
           cnhVal: cnhValDate,
           cnhDias: isNaN(cnhDiasCalc) ? null : cnhDiasCalc,
           cnhStatus: normalizeStatus(iCnhStatus>-1 ? cellText(c[iCnhStatus]) : '', cnhDiasCalc),
+          peticionado: iPeticionado>-1 ? cellText(c[iPeticionado]) : '',
+          dataPeticionamento: dataPetDate,
+          numPeticionamento: iNumPet>-1 ? cellText(c[iNumPet]) : '',
           problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
+          observacao: iObs>-1 ? cellText(c[iObs]) : '',
         };
       });
   }
@@ -617,15 +739,36 @@
 
   function render(){
     const q = els.search.value.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g,'');
     const fFilial = els.filterFilial.value;
     const fDer = els.filterStatusDer.value;
     const fCnh = els.filterStatusCnh.value;
 
+    function matchesSearch(r){
+      if(!q) return true;
+      if(r.motorista.toLowerCase().includes(q)) return true;
+      if(r.matricula && r.matricula.toLowerCase().includes(q)) return true;
+      if(qDigits.length >= 3){
+        if(r.cpf && r.cpf.replace(/\D/g,'').includes(qDigits)) return true;
+        if(r.cnhNumero && r.cnhNumero.replace(/\D/g,'').includes(qDigits)) return true;
+      }
+      return false;
+    }
+
+    // linhas para a tabela (todos os filtros, incluindo busca)
     let rows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(fDer && r.derStatus !== fDer) return false;
       if(fCnh && r.cnhStatus !== fCnh) return false;
-      if(q && !(r.motorista.toLowerCase().includes(q) || r.cpf.toLowerCase().includes(q))) return false;
+      if(!matchesSearch(r)) return false;
+      return true;
+    });
+
+    // linhas para os gráficos (mesmos filtros, exceto a busca — pedido do usuário)
+    let chartRows = rawRows.filter(r=>{
+      if(fFilial && r.filial !== fFilial) return false;
+      if(fDer && r.derStatus !== fDer) return false;
+      if(fCnh && r.cnhStatus !== fCnh) return false;
       return true;
     });
 
@@ -640,6 +783,7 @@
       if(va > vb) return 1*sortState.dir;
       return 0;
     });
+    updateSortIndicators();
 
     // stats relativas à filial selecionada no seletor (não aos demais filtros)
     const statsBase = fFilial ? rawRows.filter(r => r.filial === fFilial) : rawRows;
@@ -664,21 +808,22 @@
 
     els.countPill.textContent = `${rows.length} registro${rows.length===1?'':'s'} (de ${total})`;
 
-    // paginação (100 por página) — cards e gráficos usam "rows" (completo); só a tabela é fatiada
+    // paginação (100 por página) — cards e gráficos usam os conjuntos completos; só a tabela é fatiada
     const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     if(currentPage > totalPages) currentPage = totalPages;
     if(currentPage < 1) currentPage = 1;
     const pageRows = rows.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+    currentPageRows = pageRows;
     els.pgInfo.textContent = `Página ${currentPage} de ${totalPages}`;
     els.pgPrev.disabled = currentPage <= 1;
     els.pgNext.disabled = currentPage >= totalPages;
     document.getElementById('pagination').style.display = rows.length > PAGE_SIZE ? 'flex' : 'none';
 
     // tabela
-    els.tbody.innerHTML = pageRows.map(r=>{
+    els.tbody.innerHTML = pageRows.map((r,i)=>{
       const der = daysBar(r.derDias);
       const cnh = daysBar(r.cnhDias);
-      return `<tr>
+      return `<tr data-i="${i}">
         <td class="name">${escapeHtml(r.motorista)}</td>
         <td>${escapeHtml(r.filial)}</td>
         <td>${escapeHtml(r.funcao)}</td>
@@ -689,9 +834,62 @@
       </tr>`;
     }).join('');
 
+    document.querySelectorAll('#tbody tr').forEach(tr=>{
+      tr.addEventListener('click', () => openModal(currentPageRows[Number(tr.dataset.i)]));
+    });
+
     els.tfootMsg.textContent = rows.length===0 ? 'Nenhum condutor encontrado com os filtros atuais.' : '';
 
-    renderCharts(rows.length ? rows : rawRows);
+    const mode = fDer ? 'der' : (fCnh ? 'cnh' : 'total');
+    renderCharts(chartRows.length ? chartRows : rawRows, statsBase, mode);
+  }
+
+  function updateSortIndicators(){
+    document.querySelectorAll('thead th[data-key]').forEach(th=>{
+      const span = th.querySelector('span.arrow');
+      const active = th.dataset.key === sortState.key;
+      th.classList.toggle('sorted', active);
+      if(span) span.textContent = active ? (sortState.dir === 1 ? '▲' : '▼') : '↕';
+    });
+  }
+
+  function fmtDateTime(d){
+    if(!d) return '—';
+    return d.toLocaleDateString('pt-BR');
+  }
+
+  function statusLabel(status){
+    if(status === 'ATIVO') return 'Ativo';
+    if(status === 'VENCENDO') return 'Vencendo (< 30 dias)';
+    if(status === 'VENCIDO') return 'Vencido';
+    return '—';
+  }
+
+  function openModal(r){
+    if(!r) return;
+    document.getElementById('mdNome').textContent = r.motorista || '—';
+    document.getElementById('mdSub').textContent = [r.funcao, r.filial].filter(Boolean).join(' · ') || '—';
+    document.getElementById('mdMat').textContent = r.matricula || '—';
+    document.getElementById('mdCpf').textContent = r.cpf || '—';
+    document.getElementById('mdSexo').textContent = r.sexo || '—';
+    document.getElementById('mdAdmissao').textContent = fmtDateTime(r.admissao);
+    document.getElementById('mdDerVal').textContent = fmtDateTime(r.derVal);
+    document.getElementById('mdDerStatus').textContent = statusLabel(r.derStatus);
+    document.getElementById('mdCnhNum').textContent = r.cnhNumero || '—';
+    document.getElementById('mdCnhVal').textContent = fmtDateTime(r.cnhVal);
+    document.getElementById('mdCnhStatus').textContent = statusLabel(r.cnhStatus);
+    document.getElementById('mdPeticionado').textContent = r.peticionado || '—';
+    document.getElementById('mdDataPet').textContent = fmtDateTime(r.dataPeticionamento);
+    document.getElementById('mdNumPet').textContent = r.numPeticionamento || '—';
+    const obsParts = [];
+    if(r.problemas) obsParts.push('Problemas: ' + r.problemas);
+    if(r.observacao) obsParts.push(r.observacao);
+    document.getElementById('mdObs').textContent = obsParts.length ? obsParts.join(' — ') : 'Nenhuma observação registrada.';
+    els.modalBackdrop.classList.add('open');
+  }
+
+  function closeModal(){
+    els.modalBackdrop.classList.remove('open');
   }
 
   function badge(problemas){
@@ -704,14 +902,12 @@
     return (s??'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
-  function renderCharts(rows){
+  function renderCharts(filialRows, statusRows, mode){
     // por filial
     const byFilial = {};
-    rows.forEach(r=>{ byFilial[r.filial] = (byFilial[r.filial]||0)+1; });
+    filialRows.forEach(r=>{ byFilial[r.filial] = (byFilial[r.filial]||0)+1; });
     const filiais = Object.keys(byFilial).sort((a,b)=>byFilial[b]-byFilial[a]);
     const filialVals = filiais.map(f=>byFilial[f]);
-
-    const paletteNavy = ['#0f2544','#1e4278','#2e5aa0','#f2a93b','#c07f16','#2bad7d','#93a0b3'];
 
     if(charts.filial) charts.filial.destroy();
     charts.filial = new Chart(document.getElementById('chartFilial'), {
@@ -727,19 +923,43 @@
       }
     });
 
-    const derA = rows.filter(r=>r.derStatus==='ATIVO').length;
-    const derP = rows.filter(r=>r.derStatus==='VENCENDO').length;
-    const derV = rows.filter(r=>r.derStatus==='VENCIDO').length;
-    const cnhA = rows.filter(r=>r.cnhStatus==='ATIVO').length;
-    const cnhV = rows.filter(r=>r.cnhStatus==='VENCIDO').length;
+    // situação documental — inteligente conforme o card/filtro ativo
+    let labels, data, colors, subtitle;
+    if(mode === 'der'){
+      labels = ['DER ativo','DER vencendo','DER vencido'];
+      data = [
+        statusRows.filter(r=>r.derStatus==='ATIVO').length,
+        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
+        statusRows.filter(r=>r.derStatus==='VENCIDO').length
+      ];
+      colors = ['#2bad7d','#f2a93b','#e5484d'];
+      subtitle = 'DER — ativos, vencendo e vencidos';
+    } else if(mode === 'cnh'){
+      labels = ['CNH ativa','CNH vencida'];
+      data = [
+        statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
+        statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
+      ];
+      colors = ['#1e4278','#e5484d'];
+      subtitle = 'CNH — ativas e vencidas';
+    } else {
+      labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida'];
+      data = [
+        statusRows.filter(r=>r.derStatus==='ATIVO').length,
+        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
+        statusRows.filter(r=>r.derStatus==='VENCIDO').length,
+        statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
+        statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
+      ];
+      colors = ['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16'];
+      subtitle = 'DER x CNH — visão geral completa';
+    }
+    document.getElementById('chartStatusSub').textContent = subtitle;
 
     if(charts.status) charts.status.destroy();
     charts.status = new Chart(document.getElementById('chartStatus'), {
       type:'doughnut',
-      data:{
-        labels:['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida'],
-        datasets:[{ data:[derA,derP,derV,cnhA,cnhV], backgroundColor:['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16'], borderWidth:0 }]
-      },
+      data:{ labels, datasets:[{ data, backgroundColor: colors, borderWidth:0 }] },
       options:{
         responsive:true, maintainAspectRatio:false, cutout:'62%',
         plugins:{legend:{position:'bottom', labels:{font:{family:'Inter', size:11}, boxWidth:10, padding:14}}}
