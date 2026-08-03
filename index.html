@@ -225,31 +225,32 @@
   }
   .modal-backdrop.open{display:flex;}
   .modal-card{
-    background:#fff;border-radius:var(--radius);max-width:640px;width:100%;
-    max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(10,25,48,.35);
+    background:#fff;border-radius:var(--radius);max-width:620px;width:100%;
+    max-height:92vh;overflow:hidden;box-shadow:0 24px 60px rgba(10,25,48,.35);
+    display:flex;flex-direction:column;
   }
   .modal-head{
-    background:var(--navy-900);color:#fff;padding:22px 26px;border-radius:var(--radius) var(--radius) 0 0;
-    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    background:var(--navy-900);color:#fff;padding:16px 22px;border-radius:var(--radius) var(--radius) 0 0;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex:none;
   }
-  .modal-head h2{font-family:var(--font-display);margin:0 0 4px;font-size:19px;}
-  .modal-head p{margin:0;color:var(--slate-400);font-size:13px;}
+  .modal-head h2{font-family:var(--font-display);margin:0 0 3px;font-size:17px;}
+  .modal-head p{margin:0;color:var(--slate-400);font-size:12px;}
   .modal-close{
-    background:rgba(255,255,255,.12);border:none;color:#fff;width:30px;height:30px;
-    border-radius:50%;font-size:16px;cursor:pointer;flex:none;
+    background:rgba(255,255,255,.12);border:none;color:#fff;width:26px;height:26px;
+    border-radius:50%;font-size:14px;cursor:pointer;flex:none;
   }
   .modal-close:hover{background:rgba(255,255,255,.24);}
-  .modal-body{padding:22px 26px 26px;}
-  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-bottom:18px;}
-  .modal-field{display:flex;flex-direction:column;gap:3px;}
-  .modal-field .lbl{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--slate-600);}
-  .modal-field .val{font-size:14px;color:var(--slate-900);font-weight:600;}
+  .modal-body{padding:16px 22px 20px;overflow-y:auto;}
+  .modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;}
+  .modal-field{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .modal-field .lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--slate-600);}
+  .modal-field .val{font-size:12.5px;color:var(--slate-900);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .modal-section-title{
-    font-family:var(--font-display);font-size:13px;color:var(--navy-800);
-    margin:20px 0 10px;padding-top:14px;border-top:1px solid var(--line);
+    font-family:var(--font-display);font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--navy-800);
+    margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--line);
   }
-  .modal-note{background:var(--bg);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--slate-900);line-height:1.5;}
-  @media (max-width:600px){ .modal-grid{grid-template-columns:1fr;} }
+  .modal-note{background:var(--bg);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--slate-900);line-height:1.45;margin-top:8px;max-height:80px;overflow-y:auto;}
+  @media (max-width:600px){ .modal-grid{grid-template-columns:1fr 1fr;} }
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
   @media (max-width:1100px){
@@ -417,24 +418,15 @@
         <div class="modal-field"><span class="lbl">CPF</span><span class="val" id="mdCpf">—</span></div>
         <div class="modal-field"><span class="lbl">Sexo</span><span class="val" id="mdSexo">—</span></div>
         <div class="modal-field"><span class="lbl">Admissão</span><span class="val" id="mdAdmissao">—</span></div>
-      </div>
-
-      <div class="modal-section-title">Documentação</div>
-      <div class="modal-grid">
         <div class="modal-field"><span class="lbl">DER validade</span><span class="val" id="mdDerVal">—</span></div>
         <div class="modal-field"><span class="lbl">Status DER</span><span class="val" id="mdDerStatus">—</span></div>
         <div class="modal-field"><span class="lbl">CNH nº</span><span class="val" id="mdCnhNum">—</span></div>
         <div class="modal-field"><span class="lbl">CNH validade</span><span class="val" id="mdCnhVal">—</span></div>
         <div class="modal-field"><span class="lbl">Status CNH</span><span class="val" id="mdCnhStatus">—</span></div>
-      </div>
-
-      <div class="modal-section-title">Peticionamento</div>
-      <div class="modal-grid">
         <div class="modal-field"><span class="lbl">Peticionado</span><span class="val" id="mdPeticionado">—</span></div>
-        <div class="modal-field"><span class="lbl">Data peticionamento</span><span class="val" id="mdDataPet">—</span></div>
-        <div class="modal-field"><span class="lbl">Nº peticionamento</span><span class="val" id="mdNumPet">—</span></div>
+        <div class="modal-field"><span class="lbl">Data peticion.</span><span class="val" id="mdDataPet">—</span></div>
+        <div class="modal-field"><span class="lbl">Nº peticion.</span><span class="val" id="mdNumPet">—</span></div>
       </div>
-
       <div class="modal-section-title">Problemas &amp; observações</div>
       <div class="modal-note" id="mdObs">—</div>
     </div>
@@ -502,7 +494,6 @@
   els.filterStatusCnh.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
   els.pgPrev.addEventListener('click', () => { if(currentPage > 1){ currentPage--; render(); } });
   els.pgNext.addEventListener('click', () => { currentPage++; render(); });
-
   document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
     card.addEventListener('click', () => {
       const type = card.dataset.filterType;
@@ -512,12 +503,14 @@
         els.filterStatusCnh.value = '';
       } else if(type === 'der'){
         els.filterStatusDer.value = (els.filterStatusDer.value === value) ? '' : value;
+        els.filterStatusCnh.value = '';
       } else if(type === 'cnh'){
         els.filterStatusCnh.value = (els.filterStatusCnh.value === value) ? '' : value;
+        els.filterStatusDer.value = '';
       }
       currentPage = 1;
       syncActiveCards();
-      render();
+      render(true);
     });
   });
 
@@ -701,7 +694,7 @@
 
       buildFilialOptions();
       syncActiveCards();
-      render();
+      render(true);
 
       if(refreshTimer) clearInterval(refreshTimer);
       refreshTimer = setInterval(() => loadData(), 5 * 60 * 1000);
@@ -737,7 +730,7 @@
     return {pct, color, label: days < 0 ? 'Vencido' : `${days}d`};
   }
 
-  function render(){
+  function render(updateCharts){
     const q = els.search.value.trim().toLowerCase();
     const qDigits = q.replace(/\D/g,'');
     const fFilial = els.filterFilial.value;
@@ -840,8 +833,10 @@
 
     els.tfootMsg.textContent = rows.length===0 ? 'Nenhum condutor encontrado com os filtros atuais.' : '';
 
-    const mode = fDer ? 'der' : (fCnh ? 'cnh' : 'total');
-    renderCharts(chartRows.length ? chartRows : rawRows, statsBase, mode);
+    if(updateCharts){
+      const mode = fDer ? 'der' : (fCnh ? 'cnh' : 'total');
+      renderCharts(chartRows.length ? chartRows : rawRows, statsBase, mode);
+    }
   }
 
   function updateSortIndicators(){
