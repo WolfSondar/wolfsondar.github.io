@@ -61,6 +61,40 @@
   .dot.off{background:var(--slate-400);box-shadow:none;}
   .dot.err{background:var(--red);box-shadow:0 0 0 4px rgba(229,72,77,.2);}
 
+  #filterFilial{
+    background:var(--navy-800);
+    color:#fff;
+    border:1.5px solid rgba(255,255,255,.3);
+    border-radius:9px;
+    padding:8px 12px;
+    font-size:13px;
+    font-family:var(--font-body);
+    cursor:pointer;
+  }
+  #filterFilial:hover{border-color:rgba(255,255,255,.55);}
+  #filterFilial option{
+    background:#ffffff;
+    color:var(--slate-900);
+  }
+
+  /* ---------- skeleton loader ---------- */
+  @keyframes shimmer{
+    0%{background-position:-400px 0;}
+    100%{background-position:400px 0;}
+  }
+  .skel{
+    background:linear-gradient(90deg,#e9edf5 25%,#f5f7fb 37%,#e9edf5 63%);
+    background-size:800px 100%;
+    animation:shimmer 1.4s linear infinite;
+    border-radius:8px;
+  }
+  .skel-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:26px;}
+  .skel-stat{height:92px;border-radius:var(--radius);}
+  .skel-panels{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:26px;}
+  .skel-panel{height:260px;border-radius:var(--radius);}
+  .skel-row{height:42px;border-radius:8px;margin-bottom:8px;}
+  @media (max-width:1100px){ .skel-stats{grid-template-columns:repeat(3,1fr);} .skel-panels{grid-template-columns:1fr;} }
+
   /* ---------- config bar ---------- */
   .config{
     max-width:1320px;margin:-18px auto 0;padding:0 40px;position:relative;z-index:2;
@@ -114,6 +148,19 @@
   .stat.red .bar i{background:var(--red);}
   .stat.amber .v{color:#c07f16;}
   .stat.amber .bar i{background:var(--amber);}
+  .stat{cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;}
+  .stat:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(15,37,68,.1);}
+  .stat.active{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(30,66,120,.14);}
+  .stat.active .k{color:var(--navy-700);}
+
+  .pagination{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 0 4px;}
+  .pagination button{
+    border:1.5px solid var(--line);background:#fff;color:var(--slate-900);
+    border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .pagination button:disabled{opacity:.4;cursor:not-allowed;}
+  .pagination button:not(:disabled):hover{border-color:var(--navy-700);color:var(--navy-700);}
+  .pagination .p-info{font-family:var(--font-mono);font-size:12.5px;color:var(--slate-600);}
 
   /* ---------- painel gráficos ---------- */
   .panels{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:26px;}
@@ -189,8 +236,8 @@
     <div class="road-status">
       <span class="dot off" id="statusDot"></span>
       <span id="statusText">Aguardando conexão…</span>
-      <select id="filterFilial" style="background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.25);border-radius:9px;padding:8px 12px;font-size:13px;">
-        <option value="" style="color:#1b2433;">Todas as filiais</option>
+      <select id="filterFilial">
+        <option value="">Todas as filiais</option>
       </select>
       <button class="btn btn-ghost" id="btnRefresh" style="border-color:rgba(255,255,255,.25);color:#fff;">Atualizar agora</button>
     </div>
@@ -198,9 +245,20 @@
 </header>
 
 <main>
-  <div id="emptyState" class="state-msg">
-    <strong>Carregando dados da planilha…</strong>
-    Isso leva só um instante.
+  <div id="emptyState" class="state-msg" style="text-align:left;padding:28px 0;">
+    <div class="skel-stats">
+      <div class="skel skel-stat"></div><div class="skel skel-stat"></div><div class="skel skel-stat"></div>
+      <div class="skel skel-stat"></div><div class="skel skel-stat"></div><div class="skel skel-stat"></div>
+    </div>
+    <div class="skel-panels">
+      <div class="skel skel-panel"></div>
+      <div class="skel skel-panel"></div>
+    </div>
+    <div class="skel skel-row" style="width:100%;height:44px;"></div>
+    <div class="skel skel-row" style="width:100%;"></div>
+    <div class="skel skel-row" style="width:100%;"></div>
+    <div class="skel skel-row" style="width:100%;"></div>
+    <div class="skel skel-row" style="width:70%;"></div>
   </div>
 
   <div id="errorState" class="state-msg hidden">
@@ -209,33 +267,33 @@
   </div>
 
   <div id="dashboard" class="hidden">
-    <section class="stats">
-      <div class="stat total">
+    <section class="stats" id="statsSection">
+      <div class="stat total" data-filter-type="" data-filter-value="">
         <div class="k">Total de condutores</div>
         <div class="v" id="stTotal">0</div>
         <div class="bar"><i></i></div>
       </div>
-      <div class="stat green">
+      <div class="stat green" data-filter-type="der" data-filter-value="ATIVO">
         <div class="k">DER ativo</div>
         <div class="v" id="stDerAtivo">0</div>
         <div class="bar"><i id="barDerAtivo" style="width:0%"></i></div>
       </div>
-      <div class="stat amber">
+      <div class="stat amber" data-filter-type="der" data-filter-value="VENCENDO">
         <div class="k">DER vencendo</div>
         <div class="v" id="stDerVencendo">0</div>
         <div class="bar"><i id="barDerVencendo" style="width:0%"></i></div>
       </div>
-      <div class="stat red">
+      <div class="stat red" data-filter-type="der" data-filter-value="VENCIDO">
         <div class="k">DER vencido</div>
         <div class="v" id="stDerVencido">0</div>
         <div class="bar"><i id="barDerVencido" style="width:0%"></i></div>
       </div>
-      <div class="stat green">
+      <div class="stat green" data-filter-type="cnh" data-filter-value="ATIVO">
         <div class="k">CNH ativa</div>
         <div class="v" id="stCnhAtivo">0</div>
         <div class="bar"><i id="barCnhAtivo" style="width:0%"></i></div>
       </div>
-      <div class="stat red">
+      <div class="stat red" data-filter-type="cnh" data-filter-value="VENCIDO">
         <div class="k">CNH vencida</div>
         <div class="v" id="stCnhVencido">0</div>
         <div class="bar"><i id="barCnhVencido" style="width:0%"></i></div>
@@ -290,6 +348,12 @@
         </tfoot>
       </table>
     </div>
+
+    <div class="pagination" id="pagination">
+      <button id="pgPrev">‹ Anterior</button>
+      <span class="p-info" id="pgInfo">Página 1 de 1</span>
+      <button id="pgNext">Próxima ›</button>
+    </div>
   </div>
 </main>
 
@@ -316,23 +380,65 @@
     tbody: document.getElementById('tbody'),
     countPill: document.getElementById('countPill'),
     tfootMsg: document.getElementById('tfootMsg'),
+    pgPrev: document.getElementById('pgPrev'),
+    pgNext: document.getElementById('pgNext'),
+    pgInfo: document.getElementById('pgInfo'),
   };
 
   let rawRows = [];      // dados normalizados
   let sortState = {key:'motorista', dir:1};
   let charts = {filial:null, status:null};
   let refreshTimer = null;
+  const PAGE_SIZE = 100;
+  let currentPage = 1;
 
   els.btnRefresh.addEventListener('click', () => loadData());
-  els.search.addEventListener('input', render);
-  els.filterFilial.addEventListener('change', render);
-  els.filterStatusDer.addEventListener('change', render);
-  els.filterStatusCnh.addEventListener('change', render);
+  els.search.addEventListener('input', () => { currentPage = 1; render(); });
+  els.filterFilial.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
+  els.filterStatusDer.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
+  els.filterStatusCnh.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
+  els.pgPrev.addEventListener('click', () => { if(currentPage > 1){ currentPage--; render(); } });
+  els.pgNext.addEventListener('click', () => { currentPage++; render(); });
+
+  document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.dataset.filterType;
+      const value = card.dataset.filterValue;
+      if(!type){
+        els.filterStatusDer.value = '';
+        els.filterStatusCnh.value = '';
+      } else if(type === 'der'){
+        els.filterStatusDer.value = (els.filterStatusDer.value === value) ? '' : value;
+      } else if(type === 'cnh'){
+        els.filterStatusCnh.value = (els.filterStatusCnh.value === value) ? '' : value;
+      }
+      currentPage = 1;
+      syncActiveCards();
+      render();
+    });
+  });
+
+  function syncActiveCards(){
+    document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
+      const type = card.dataset.filterType;
+      const value = card.dataset.filterValue;
+      let isActive = false;
+      if(!type){
+        isActive = !els.filterStatusDer.value && !els.filterStatusCnh.value;
+      } else if(type === 'der'){
+        isActive = els.filterStatusDer.value === value;
+      } else if(type === 'cnh'){
+        isActive = els.filterStatusCnh.value === value;
+      }
+      card.classList.toggle('active', isActive);
+    });
+  }
   document.querySelectorAll('thead th').forEach(th=>{
     th.addEventListener('click', ()=>{
       const key = th.dataset.key;
       sortState.dir = (sortState.key === key) ? -sortState.dir : 1;
       sortState.key = key;
+      currentPage = 1;
       render();
     });
   });
@@ -472,6 +578,7 @@
         : `Conectado · ${ts}`);
 
       buildFilialOptions();
+      syncActiveCards();
       render();
 
       if(refreshTimer) clearInterval(refreshTimer);
@@ -557,8 +664,18 @@
 
     els.countPill.textContent = `${rows.length} registro${rows.length===1?'':'s'} (de ${total})`;
 
+    // paginação (100 por página) — cards e gráficos usam "rows" (completo); só a tabela é fatiada
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if(currentPage > totalPages) currentPage = totalPages;
+    if(currentPage < 1) currentPage = 1;
+    const pageRows = rows.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+    els.pgInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+    els.pgPrev.disabled = currentPage <= 1;
+    els.pgNext.disabled = currentPage >= totalPages;
+    document.getElementById('pagination').style.display = rows.length > PAGE_SIZE ? 'flex' : 'none';
+
     // tabela
-    els.tbody.innerHTML = rows.map(r=>{
+    els.tbody.innerHTML = pageRows.map(r=>{
       const der = daysBar(r.derDias);
       const cnh = daysBar(r.cnhDias);
       return `<tr>
