@@ -88,7 +88,7 @@
     animation:shimmer 1.4s linear infinite;
     border-radius:8px;
   }
-  .skel-stats{display:grid;grid-template-columns:repeat(7,1fr);gap:16px;margin-bottom:26px;}
+  .skel-stats{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;margin-bottom:26px;}
   .skel-stat{height:92px;border-radius:var(--radius);}
   .skel-panels{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:26px;}
   .skel-panel{height:260px;border-radius:var(--radius);}
@@ -132,7 +132,7 @@
   .hidden{display:none !important;}
 
   /* ---------- cards de estatística ---------- */
-  .stats{display:grid;grid-template-columns:repeat(7,1fr);gap:16px;margin-bottom:26px;}
+  .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;margin-bottom:26px;}
   .stat{
     background:var(--card);border-radius:var(--radius);padding:18px 18px 16px;
     border:1px solid var(--line);position:relative;overflow:hidden;
@@ -150,6 +150,8 @@
   .stat.amber .bar i{background:var(--amber);}
   .stat.gray .v{color:var(--slate-600);}
   .stat.gray .bar i{background:var(--slate-400);}
+  .stat.blue .v{color:var(--navy-700);}
+  .stat.blue .bar i{background:var(--navy-700);}
   .stat{cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;}
   .stat:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(15,37,68,.1);}
   .stat.active{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(30,66,120,.14);}
@@ -314,7 +316,7 @@
     <div class="skel-stats">
       <div class="skel skel-stat"></div><div class="skel skel-stat"></div><div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div><div class="skel skel-stat"></div><div class="skel skel-stat"></div>
-      <div class="skel skel-stat"></div>
+      <div class="skel skel-stat"></div><div class="skel skel-stat"></div>
     </div>
     <div class="skel-panels">
       <div class="skel skel-panel"></div>
@@ -353,6 +355,11 @@
         <div class="k">DER vencido</div>
         <div class="v" id="stDerVencido">0</div>
         <div class="bar"><i id="barDerVencido" style="width:0%"></i></div>
+      </div>
+      <div class="stat blue" data-filter-type="enviado" data-filter-value="TRUE">
+        <div class="k">Enviados (aguard. DER)</div>
+        <div class="v" id="stEnviados">0</div>
+        <div class="bar"><i id="barEnviados" style="width:0%"></i></div>
       </div>
       <div class="stat green" data-filter-type="cnh" data-filter-value="ATIVO">
         <div class="k">CNH ativa</div>
@@ -506,6 +513,13 @@
   const PAGE_SIZE = 100;
   let currentPage = 1;
   let cadastroFilterActive = false; // filtro do card "Sem cadastro" (auditoria)
+  let enviadoFilterActive = false; // filtro do card "Enviados (aguard. DER)"
+
+  function isEnviadoAguardando(r){
+    // enviado para o DER e ainda aguardando confirmação de validade —
+    // se o DER já está ATIVO, a confirmação já veio, então não conta como "aguardando"
+    return r.enviado === true && r.derStatus !== 'ATIVO';
+  }
 
   els.btnRefresh.addEventListener('click', () => loadData());
   els.search.addEventListener('input', () => {
@@ -523,9 +537,9 @@
   els.modalClose.addEventListener('click', closeModal);
   els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeModal(); });
-  els.filterFilial.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(); });
-  els.filterStatusDer.addEventListener('change', () => { cadastroFilterActive = false; currentPage = 1; syncActiveCards(); render(); });
-  els.filterStatusCnh.addEventListener('change', () => { cadastroFilterActive = false; currentPage = 1; syncActiveCards(); render(); });
+  els.filterFilial.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(true); });
+  els.filterStatusDer.addEventListener('change', () => { cadastroFilterActive = false; enviadoFilterActive = false; currentPage = 1; syncActiveCards(); render(true); });
+  els.filterStatusCnh.addEventListener('change', () => { cadastroFilterActive = false; enviadoFilterActive = false; currentPage = 1; syncActiveCards(); render(true); });
   els.pgPrev.addEventListener('click', () => { if(currentPage > 1){ currentPage--; render(); } });
   els.pgNext.addEventListener('click', () => { currentPage++; render(); });
   document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
@@ -536,18 +550,27 @@
         els.filterStatusDer.value = '';
         els.filterStatusCnh.value = '';
         cadastroFilterActive = false;
+        enviadoFilterActive = false;
       } else if(type === 'der'){
         els.filterStatusDer.value = (els.filterStatusDer.value === value) ? '' : value;
         els.filterStatusCnh.value = '';
         cadastroFilterActive = false;
+        enviadoFilterActive = false;
       } else if(type === 'cnh'){
         els.filterStatusCnh.value = (els.filterStatusCnh.value === value) ? '' : value;
         els.filterStatusDer.value = '';
         cadastroFilterActive = false;
+        enviadoFilterActive = false;
       } else if(type === 'cadastro'){
         cadastroFilterActive = !cadastroFilterActive;
         els.filterStatusDer.value = '';
         els.filterStatusCnh.value = '';
+        enviadoFilterActive = false;
+      } else if(type === 'enviado'){
+        enviadoFilterActive = !enviadoFilterActive;
+        els.filterStatusDer.value = '';
+        els.filterStatusCnh.value = '';
+        cadastroFilterActive = false;
       }
       currentPage = 1;
       syncActiveCards();
@@ -561,13 +584,15 @@
       const value = card.dataset.filterValue;
       let isActive = false;
       if(!type){
-        isActive = !els.filterStatusDer.value && !els.filterStatusCnh.value && !cadastroFilterActive;
+        isActive = !els.filterStatusDer.value && !els.filterStatusCnh.value && !cadastroFilterActive && !enviadoFilterActive;
       } else if(type === 'der'){
         isActive = els.filterStatusDer.value === value;
       } else if(type === 'cnh'){
         isActive = els.filterStatusCnh.value === value;
       } else if(type === 'cadastro'){
         isActive = cadastroFilterActive;
+      } else if(type === 'enviado'){
+        isActive = enviadoFilterActive;
       }
       card.classList.toggle('active', isActive);
     });
@@ -609,6 +634,17 @@
   function cellText(cell){
     if(!cell) return '';
     return (cell.f !== undefined && cell.f !== null) ? String(cell.f) : (cell.v ?? '');
+  }
+
+  function cellBool(cell){
+    // coluna ENVIADOS vem como checkbox (TRUE/FALSE) do Google Sheets
+    if(!cell) return false;
+    if(cell.v === true) return true;
+    if(typeof cell.v === 'string'){
+      const t = cell.v.trim().toUpperCase();
+      return t === 'TRUE' || t === 'SIM' || t === 'VERDADEIRO';
+    }
+    return false;
   }
 
   function daysUntil(date){
@@ -677,6 +713,7 @@
     const iNumPet = idxAny('N. PETICIONAMENTO', 'Nº PETICIONAMENTO', 'NUMERO PETICIONAMENTO');
     const iProblemas = idx('PROBLEMAS');
     const iObs = idx('OBSERVAÇÃO');
+    const iEnviado = idx('ENVIADOS');
 
     return data.table.rows
       .map(r => r.c)
@@ -708,6 +745,7 @@
           numPeticionamento: iNumPet>-1 ? cellText(c[iNumPet]) : '',
           problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
           observacao: iObs>-1 ? cellText(c[iObs]) : '',
+          enviado: iEnviado>-1 ? cellBool(c[iEnviado]) : false,
         };
       });
   }
@@ -819,6 +857,8 @@
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterActive){
         if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
+      } else if(enviadoFilterActive){
+        if(!isEnviadoAguardando(r)) return false;
       } else {
         if(fDer && r.derStatus !== fDer) return false;
         if(fCnh && r.cnhStatus !== fCnh) return false;
@@ -832,6 +872,8 @@
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterActive){
         if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
+      } else if(enviadoFilterActive){
+        if(!isEnviadoAguardando(r)) return false;
       } else {
         if(fDer && r.derStatus !== fDer) return false;
         if(fCnh && r.cnhStatus !== fCnh) return false;
@@ -861,6 +903,7 @@
     const cnhAtivo = statsBase.filter(r=>r.cnhStatus==='ATIVO').length;
     const cnhVencido = statsBase.filter(r=>r.cnhStatus==='VENCIDO').length;
     const semCadastro = statsBase.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length;
+    const enviados = statsBase.filter(isEnviadoAguardando).length;
 
     document.getElementById('stTotal').textContent = total;
     document.getElementById('stDerAtivo').textContent = derAtivo;
@@ -869,12 +912,14 @@
     document.getElementById('stCnhAtivo').textContent = cnhAtivo;
     document.getElementById('stCnhVencido').textContent = cnhVencido;
     document.getElementById('stSemCadastro').textContent = semCadastro;
+    document.getElementById('stEnviados').textContent = enviados;
     document.getElementById('barDerAtivo').style.width = total? (derAtivo/total*100)+'%':'0%';
     document.getElementById('barDerVencendo').style.width = total? (derVencendo/total*100)+'%':'0%';
     document.getElementById('barDerVencido').style.width = total? (derVencido/total*100)+'%':'0%';
     document.getElementById('barCnhAtivo').style.width = total? (cnhAtivo/total*100)+'%':'0%';
     document.getElementById('barCnhVencido').style.width = total? (cnhVencido/total*100)+'%':'0%';
     document.getElementById('barSemCadastro').style.width = total? (semCadastro/total*100)+'%':'0%';
+    document.getElementById('barEnviados').style.width = total? (enviados/total*100)+'%':'0%';
 
     els.countPill.textContent = `${rows.length} registro${rows.length===1?'':'s'} (de ${total})`;
 
@@ -1022,10 +1067,20 @@
       if(els.filterStatusDer.value === value) return false;
       els.filterStatusDer.value = value;
       els.filterStatusCnh.value = '';
+      cadastroFilterActive = false;
+      enviadoFilterActive = false;
     } else if(type === 'cnh'){
       if(els.filterStatusCnh.value === value) return false;
       els.filterStatusCnh.value = value;
       els.filterStatusDer.value = '';
+      cadastroFilterActive = false;
+      enviadoFilterActive = false;
+    } else if(type === 'cadastro'){
+      if(cadastroFilterActive) return false;
+      cadastroFilterActive = true;
+      els.filterStatusDer.value = '';
+      els.filterStatusCnh.value = '';
+      enviadoFilterActive = false;
     }
     return true;
   }
@@ -1083,17 +1138,18 @@
       targets = [{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
       subtitle = 'CNH — ativas e vencidas';
     } else {
-      labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida'];
+      labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida','Sem cadastro'];
       data = [
         statusRows.filter(r=>r.derStatus==='ATIVO').length,
         statusRows.filter(r=>r.derStatus==='VENCENDO').length,
         statusRows.filter(r=>r.derStatus==='VENCIDO').length,
         statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
-        statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
+        statusRows.filter(r=>r.cnhStatus==='VENCIDO').length,
+        statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length
       ];
-      colors = ['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16'];
-      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
-      subtitle = 'DER x CNH — visão geral completa';
+      colors = ['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16','#93a0b3'];
+      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'}];
+      subtitle = 'DER x CNH — visão geral completa (inclui sem cadastro)';
     }
     document.getElementById('chartStatusSub').textContent = subtitle;
 
