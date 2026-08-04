@@ -218,6 +218,26 @@
   .days span.n{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
   tfoot td{padding:14px;text-align:center;color:var(--slate-400);font-size:12px;}
 
+  /* ---------- cards mobile (telas < 768px) ---------- */
+  .mobile-cards{display:none;flex-direction:column;gap:10px;}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .12s;}
+  .mcard:hover{border-color:var(--navy-700);}
+  .mcard-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px;}
+  .mcard-name{font-weight:700;font-size:14px;color:var(--slate-900);}
+  .mcard-filial{font-size:10.5px;color:var(--slate-600);font-family:var(--font-mono);white-space:nowrap;text-transform:uppercase;}
+  .mcard-func{font-size:11.5px;color:var(--slate-600);margin:-6px 0 10px;}
+  .mcard-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--slate-600);padding:5px 0;border-top:1px solid var(--line);}
+  .mcard-row:first-of-type{border-top:none;}
+  .mcard-pill{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:700;}
+  @media (max-width:768px){
+    .table-wrap{display:none;}
+    .mobile-cards{display:flex;}
+  }
+
+  /* ---------- copiar no modal ---------- */
+  .val.copyable{cursor:pointer;border-bottom:1.5px dashed var(--slate-400);}
+  .val.copyable:hover{color:var(--navy-700);border-color:var(--navy-700);}
+
   /* ---------- modal de detalhes do condutor ---------- */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(10,25,48,.55);display:none;
@@ -366,11 +386,13 @@
         <option value="ATIVO">DER ativo</option>
         <option value="VENCENDO">DER vencendo (&lt;30d)</option>
         <option value="VENCIDO">DER vencido</option>
+        <option value="SEM_CADASTRO">DER sem cadastro</option>
       </select>
       <select id="filterStatusCnh">
         <option value="">CNH — todos</option>
         <option value="ATIVO">CNH ativa</option>
         <option value="VENCIDO">CNH vencida</option>
+        <option value="SEM_CADASTRO">CNH sem cadastro</option>
       </select>
       <span class="count-pill" id="countPill">0 registros</span>
     </div>
@@ -395,6 +417,8 @@
       </table>
     </div>
 
+    <div class="mobile-cards" id="mobileCards"></div>
+
     <div class="pagination" id="pagination">
       <button id="pgPrev">‹ Anterior</button>
       <span class="p-info" id="pgInfo">Página 1 de 1</span>
@@ -414,8 +438,8 @@
     </div>
     <div class="modal-body">
       <div class="modal-grid">
-        <div class="modal-field"><span class="lbl">Matrícula</span><span class="val" id="mdMat">—</span></div>
-        <div class="modal-field"><span class="lbl">CPF</span><span class="val" id="mdCpf">—</span></div>
+        <div class="modal-field"><span class="lbl">Matrícula (clique p/ copiar)</span><span class="val copyable" id="mdMat">—</span></div>
+        <div class="modal-field"><span class="lbl">CPF (clique p/ copiar)</span><span class="val copyable" id="mdCpf">—</span></div>
         <div class="modal-field"><span class="lbl">Sexo</span><span class="val" id="mdSexo">—</span></div>
         <div class="modal-field"><span class="lbl">Admissão</span><span class="val" id="mdAdmissao">—</span></div>
         <div class="modal-field"><span class="lbl">DER validade</span><span class="val" id="mdDerVal">—</span></div>
@@ -455,6 +479,7 @@
     filterStatusDer: document.getElementById('filterStatusDer'),
     filterStatusCnh: document.getElementById('filterStatusCnh'),
     tbody: document.getElementById('tbody'),
+    mobileCards: document.getElementById('mobileCards'),
     countPill: document.getElementById('countPill'),
     tfootMsg: document.getElementById('tfootMsg'),
     pgPrev: document.getElementById('pgPrev'),
@@ -552,10 +577,13 @@
 
   function parseGvizDate(cell){
     if(!cell) return null;
-    if(cell.v === null || cell.v === undefined) return null;
+    if(cell.v === null || cell.v === undefined || cell.v === '') return null;
     if(typeof cell.v === 'string' && cell.v.startsWith('Date(')){
       const parts = cell.v.replace('Date(','').replace(')','').split(',').map(Number);
-      return new Date(parts[0], parts[1], parts[2]);
+      const d = new Date(parts[0], parts[1], parts[2]);
+      // datas "vazias" no Sheets viram serial 0 = 30/12/1899 (ou próximo) — tratar como sem cadastro
+      if(parts[0] < 1950) return null;
+      return d;
     }
     return null;
   }
@@ -573,15 +601,28 @@
     return Math.round((d - now) / 86400000);
   }
 
+  function parseNumOrNull(text){
+    const t = (text||'').toString().trim();
+    if(t === '') return null;
+    const n = Number(t);
+    return isNaN(n) ? null : n;
+  }
+
   function normalizeStatus(text, days, vencendoThreshold){
     const t = (text||'').toString().trim().toUpperCase();
     let base;
+    if(days === null || isNaN(days)){
+      // sem data de validade nem dias informados: não é "vencido", é falta de cadastro
+      if(t.includes('VENCID')) base = 'VENCIDO';
+      else if(t.includes('ATIV')) base = 'ATIVO';
+      else base = 'SEM_CADASTRO';
+      return base;
+    }
     if(t.includes('VENCID')) base = 'VENCIDO';
     else if(t.includes('ATIV')) base = 'ATIVO';
-    else if(days !== null && !isNaN(days) && days < 0) base = 'VENCIDO';
-    else if(days !== null && !isNaN(days) && days >= 0) base = 'ATIVO';
-    else base = 'OUTRO';
-    if(base === 'ATIVO' && vencendoThreshold != null && days !== null && !isNaN(days) && days < vencendoThreshold){
+    else if(days < 0) base = 'VENCIDO';
+    else base = 'ATIVO';
+    if(base === 'ATIVO' && vencendoThreshold != null && days < vencendoThreshold){
       return 'VENCENDO';
     }
     return base;
@@ -620,8 +661,8 @@
         const cnhValDate = parseGvizDate(c[iCnhVal]);
         const admissaoDate = iAdmissao>-1 ? parseGvizDate(c[iAdmissao]) : null;
         const dataPetDate = iDataPet>-1 ? parseGvizDate(c[iDataPet]) : null;
-        const derDiasCalc = derValDate ? daysUntil(derValDate) : (iDerDias>-1 ? Number(cellText(c[iDerDias])) : null);
-        const cnhDiasCalc = cnhValDate ? daysUntil(cnhValDate) : (iCnhDias>-1 ? Number(cellText(c[iCnhDias])) : null);
+        const derDiasCalc = derValDate ? daysUntil(derValDate) : parseNumOrNull(iDerDias>-1 ? cellText(c[iDerDias]) : '');
+        const cnhDiasCalc = cnhValDate ? daysUntil(cnhValDate) : parseNumOrNull(iCnhDias>-1 ? cellText(c[iCnhDias]) : '');
         return {
           motorista: cellText(c[iNome]),
           cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
@@ -721,8 +762,8 @@
     return d.toLocaleDateString('pt-BR');
   }
 
-  function daysBar(days){
-    if(days === null || isNaN(days)) return {pct:0, color:'var(--slate-400)', label:'—'};
+  function daysBar(days, status){
+    if(status === 'SEM_CADASTRO' || days === null || isNaN(days)) return {pct:0, color:'var(--slate-400)', label:'—'};
     let color = 'var(--green)';
     if(days < 0) color = 'var(--red)';
     else if(days <= 30) color = 'var(--amber)';
@@ -814,8 +855,8 @@
 
     // tabela
     els.tbody.innerHTML = pageRows.map((r,i)=>{
-      const der = daysBar(r.derDias);
-      const cnh = daysBar(r.cnhDias);
+      const der = daysBar(r.derDias, r.derStatus);
+      const cnh = daysBar(r.cnhDias, r.cnhStatus);
       return `<tr data-i="${i}">
         <td class="name">${escapeHtml(r.motorista)}</td>
         <td>${escapeHtml(r.filial)}</td>
@@ -830,6 +871,28 @@
     document.querySelectorAll('#tbody tr').forEach(tr=>{
       tr.addEventListener('click', () => openModal(currentPageRows[Number(tr.dataset.i)]));
     });
+
+    // cards mobile (telas < 768px)
+    els.mobileCards.innerHTML = pageRows.map((r,i)=>{
+      const der = daysBar(r.derDias, r.derStatus);
+      const cnh = daysBar(r.cnhDias, r.cnhStatus);
+      return `<div class="mcard" data-i="${i}">
+        <div class="mcard-top">
+          <span class="mcard-name">${escapeHtml(r.motorista)}</span>
+          <span class="mcard-filial">${escapeHtml(r.filial)}</span>
+        </div>
+        <div class="mcard-func">${escapeHtml(r.funcao || '—')}</div>
+        <div class="mcard-row"><span>DER · ${fmtDate(r.derVal)}</span><span class="mcard-pill" style="background:${der.color}22;color:${der.color}">${der.label}</span></div>
+        <div class="mcard-row"><span>CNH · ${fmtDate(r.cnhVal)}</span><span class="mcard-pill" style="background:${cnh.color}22;color:${cnh.color}">${cnh.label}</span></div>
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('#mobileCards .mcard').forEach(card=>{
+      card.addEventListener('click', () => openModal(currentPageRows[Number(card.dataset.i)]));
+    });
+    if(rows.length===0){
+      els.mobileCards.innerHTML = '<div class="state-msg">Nenhum condutor encontrado com os filtros atuais.</div>';
+    }
 
     els.tfootMsg.textContent = rows.length===0 ? 'Nenhum condutor encontrado com os filtros atuais.' : '';
 
@@ -857,15 +920,35 @@
     if(status === 'ATIVO') return 'Ativo';
     if(status === 'VENCENDO') return 'Vencendo (< 30 dias)';
     if(status === 'VENCIDO') return 'Vencido';
+    if(status === 'SEM_CADASTRO') return 'Sem cadastro';
     return '—';
+  }
+
+  function copyToClipboard(text, el){
+    if(!text) return;
+    const restore = el.textContent;
+    const done = () => { el.textContent = 'Copiado ✓'; setTimeout(() => { el.textContent = restore; }, 1100); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(done);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      done();
+    }
   }
 
   function openModal(r){
     if(!r) return;
     document.getElementById('mdNome').textContent = r.motorista || '—';
     document.getElementById('mdSub').textContent = [r.funcao, r.filial].filter(Boolean).join(' · ') || '—';
-    document.getElementById('mdMat').textContent = r.matricula || '—';
-    document.getElementById('mdCpf').textContent = r.cpf || '—';
+    const matEl = document.getElementById('mdMat');
+    const cpfEl = document.getElementById('mdCpf');
+    matEl.textContent = r.matricula || '—';
+    cpfEl.textContent = r.cpf || '—';
+    matEl.onclick = () => copyToClipboard(r.matricula, matEl);
+    cpfEl.onclick = () => copyToClipboard(r.cpf, cpfEl);
     document.getElementById('mdSexo').textContent = r.sexo || '—';
     document.getElementById('mdAdmissao').textContent = fmtDateTime(r.admissao);
     document.getElementById('mdDerVal').textContent = fmtDateTime(r.derVal);
@@ -897,6 +980,20 @@
     return (s??'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
+  function applyChartStatusFilter(type, value){
+    // aplica o filtro de status vindo de um clique no gráfico; não faz nada se já estiver ativo
+    if(type === 'der'){
+      if(els.filterStatusDer.value === value) return false;
+      els.filterStatusDer.value = value;
+      els.filterStatusCnh.value = '';
+    } else if(type === 'cnh'){
+      if(els.filterStatusCnh.value === value) return false;
+      els.filterStatusCnh.value = value;
+      els.filterStatusDer.value = '';
+    }
+    return true;
+  }
+
   function renderCharts(filialRows, statusRows, mode){
     // por filial
     const byFilial = {};
@@ -910,6 +1007,16 @@
       data:{ labels: filiais, datasets:[{ data: filialVals, backgroundColor: '#1e4278', borderRadius:6, maxBarThickness:34 }]},
       options:{
         responsive:true, maintainAspectRatio:false,
+        onClick:(evt, elements)=>{
+          if(!elements.length) return;
+          const clickedFilial = filiais[elements[0].index];
+          if(els.filterFilial.value === clickedFilial) return; // já filtrando essa filial: nada acontece
+          els.filterFilial.value = clickedFilial;
+          currentPage = 1;
+          syncActiveCards();
+          render(true);
+        },
+        onHover:(evt, elements)=>{ evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
         plugins:{legend:{display:false}},
         scales:{
           x:{ticks:{font:{family:'Inter', size:11}}, grid:{display:false}},
@@ -919,7 +1026,7 @@
     });
 
     // situação documental — inteligente conforme o card/filtro ativo
-    let labels, data, colors, subtitle;
+    let labels, data, colors, subtitle, targets;
     if(mode === 'der'){
       labels = ['DER ativo','DER vencendo','DER vencido'];
       data = [
@@ -928,6 +1035,7 @@
         statusRows.filter(r=>r.derStatus==='VENCIDO').length
       ];
       colors = ['#2bad7d','#f2a93b','#e5484d'];
+      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'}];
       subtitle = 'DER — ativos, vencendo e vencidos';
     } else if(mode === 'cnh'){
       labels = ['CNH ativa','CNH vencida'];
@@ -936,6 +1044,7 @@
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
       ];
       colors = ['#1e4278','#e5484d'];
+      targets = [{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
       subtitle = 'CNH — ativas e vencidas';
     } else {
       labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida'];
@@ -947,6 +1056,7 @@
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
       ];
       colors = ['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16'];
+      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
       subtitle = 'DER x CNH — visão geral completa';
     }
     document.getElementById('chartStatusSub').textContent = subtitle;
@@ -957,6 +1067,17 @@
       data:{ labels, datasets:[{ data, backgroundColor: colors, borderWidth:0 }] },
       options:{
         responsive:true, maintainAspectRatio:false, cutout:'62%',
+        onClick:(evt, elements)=>{
+          if(!elements.length) return;
+          const target = targets[elements[0].index];
+          if(!target) return;
+          const changed = applyChartStatusFilter(target.type, target.value);
+          if(!changed) return; // já filtrando essa fatia: nada acontece
+          currentPage = 1;
+          syncActiveCards();
+          render(true);
+        },
+        onHover:(evt, elements)=>{ evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
         plugins:{legend:{position:'bottom', labels:{font:{family:'Inter', size:11}, boxWidth:10, padding:14}}}
       }
     });
