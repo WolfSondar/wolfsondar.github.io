@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel de Condutores</title>
-<link rel="icon" type="image/jpeg" href="https://instagram.fplu19-1.fna.fbcdn.net/v/t51.2885-19/465054085_419012537746550_1295687446702910856_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fplu19-1.fna.fbcdn.net&_nc_cat=102&_nc_oc=Q6cZ2gGOQd777dqWjFL-Z5wI6byDF7FohvYA68XGzhl253e1XRC8xz3oKohlNggxh1m6appnzjnEd06Nhm9siVFqTQc0&_nc_ohc=eyxq3BC5xI8Q7kNvwHj00fT&_nc_gid=orj3bsv3jRIcFvqDOcFnPw&edm=AEYEu-QBAAAA&ccb=7-5&oh=00_AQG28wDbypjkroC5m-ZsAzVnLJ9HanB89lwPiA0MBd8fgA&oe=6A785C0F&_nc_sid=ead929">
+<link rel="icon" type="image/jpeg" href="Img/favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -988,7 +988,7 @@
     els.tfootMsg.textContent = rows.length===0 ? 'Nenhum condutor encontrado com os filtros atuais.' : '';
 
     if(updateCharts){
-      const mode = fDer ? 'der' : (fCnh ? 'cnh' : 'total');
+      const mode = fDer ? 'der' : (fCnh ? 'cnh' : (cadastroFilterStatus ? 'cadastro' : 'total'));
       renderCharts(chartRows.length ? chartRows : rawRows, statsBase, mode);
     }
   }
@@ -1084,8 +1084,8 @@
       els.filterStatusDer.value = '';
       cadastroFilterStatus = '';
     } else if(type === 'cadastro'){
-      if(cadastroFilterStatus === 'SEM_CADASTRO') return false;
-      cadastroFilterStatus = 'SEM_CADASTRO';
+      if(cadastroFilterStatus === value) return false;
+      cadastroFilterStatus = value;
       els.filterStatusDer.value = '';
       els.filterStatusCnh.value = '';
     }
@@ -1124,6 +1124,17 @@
     });
 
     // situação documental — inteligente conforme o card/filtro ativo
+    // paleta: DER (mais importante) usa cores fortes e saturadas — verde/laranja/vermelho vivos.
+    // CNH (secundário) usa tons de azul/roxo, para não competir visualmente com o DER.
+    const COL = {
+      derAtivo:    '#1a9c5c', // verde forte
+      derVencendo: '#e2790a', // laranja forte (bem distinto do amarelo/roxo da CNH)
+      derVencido:  '#d21f2d', // vermelho forte
+      cnhAtiva:    '#4f7cd6', // azul suave
+      cnhVencida:  '#9457d1', // roxo suave
+      semCadastro: '#98a3b3', // cinza neutro
+      aguardando:  '#0e9490', // teal — bem diferente das outras
+    };
     let labels, data, colors, subtitle, targets;
     if(mode === 'der'){
       labels = ['DER ativo','DER vencendo','DER vencido'];
@@ -1132,7 +1143,7 @@
         statusRows.filter(r=>r.derStatus==='VENCENDO').length,
         statusRows.filter(r=>r.derStatus==='VENCIDO').length
       ];
-      colors = ['#2bad7d','#f2a93b','#e5484d'];
+      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido];
       targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'}];
       subtitle = 'DER — ativos, vencendo e vencidos';
     } else if(mode === 'cnh'){
@@ -1141,9 +1152,18 @@
         statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
       ];
-      colors = ['#1e4278','#e5484d'];
+      colors = [COL.cnhAtiva, COL.cnhVencida];
       targets = [{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
       subtitle = 'CNH — ativas e vencidas';
+    } else if(mode === 'cadastro'){
+      labels = ['Sem cadastro','Enviados (aguard. DER)'];
+      data = [
+        statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length,
+        statusRows.filter(isEnviadoAguardando).length
+      ];
+      colors = [COL.semCadastro, COL.aguardando];
+      targets = [{type:'cadastro',value:'SEM_CADASTRO'},{type:'cadastro',value:'AGUARDANDO'}];
+      subtitle = 'Sem cadastro x Enviados aguardando confirmação do DER';
     } else {
       labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida','Sem cadastro'];
       data = [
@@ -1154,7 +1174,7 @@
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length,
         statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length
       ];
-      colors = ['#2bad7d','#f2a93b','#e5484d','#1e4278','#c07f16','#93a0b3'];
+      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.cnhAtiva, COL.cnhVencida, COL.semCadastro];
       targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'}];
       subtitle = 'DER x CNH — visão geral completa (inclui sem cadastro)';
     }
