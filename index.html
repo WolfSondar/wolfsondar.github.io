@@ -380,7 +380,7 @@
         <div class="bar"><i id="barSemCadastro" style="width:0%"></i></div>
       </div>
       <div class="stat blue" data-filter-type="enviado" data-filter-value="AGUARDANDO">
-        <div class="k">Enviados (aguard. DER)</div>
+        <div class="k">Aguardando DER)</div>
         <div class="v" id="stEnviados">0</div>
         <div class="bar"><i id="barEnviados" style="width:0%"></i></div>
       </div>
@@ -466,8 +466,8 @@
     </div>
     <div class="modal-body">
       <div class="modal-grid">
-        <div class="modal-field"><span class="lbl">Matrícula (clique p/ copiar)</span><span class="val copyable" id="mdMat">—</span></div>
-        <div class="modal-field"><span class="lbl">CPF (clique p/ copiar)</span><span class="val copyable" id="mdCpf">—</span></div>
+        <div class="modal-field"><span class="lbl">Matrícula</span><span class="val copyable" id="mdMat">—</span></div>
+        <div class="modal-field"><span class="lbl">CPF</span><span class="val copyable" id="mdCpf">—</span></div>
         <div class="modal-field"><span class="lbl">Sexo</span><span class="val" id="mdSexo">—</span></div>
         <div class="modal-field"><span class="lbl">Admissão</span><span class="val" id="mdAdmissao">—</span></div>
         <div class="modal-field"><span class="lbl">DER validade</span><span class="val" id="mdDerVal">—</span></div>
@@ -526,7 +526,7 @@
   let refreshTimer = null;
   const PAGE_SIZE = 100;
   let currentPage = 1;
-  let cadastroFilterStatus = ''; // filtro unificado dos cards "Sem cadastro" / "Enviados (aguard. DER)": '' | 'SEM_CADASTRO' | 'AGUARDANDO'
+  let cadastroFilterStatus = ''; // filtro unificado dos cards "Sem cadastro" / "Aguardando DER": '' | 'SEM_CADASTRO' | 'AGUARDANDO'
 
   function isEnviadoAguardando(r){
     // enviado para o DER e ainda aguardando confirmação de validade —
@@ -1156,7 +1156,7 @@
       targets = [{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
       subtitle = 'CNH — ativas e vencidas';
     } else if(mode === 'cadastro'){
-      labels = ['Sem cadastro','Enviados (aguard. DER)'];
+      labels = ['Sem cadastro','Aguardando DER'];
       data = [
         statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length,
         statusRows.filter(isEnviadoAguardando).length
