@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Condutores</title>
+<title>Painel de Frota</title>
 <link rel="icon" type="image/jpeg" href="Img/favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -57,12 +57,12 @@
     font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
     color:var(--amber);margin-bottom:8px;display:block;
   }
-  .road-status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--slate-400);}
+  .road-status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--slate-400);flex-wrap:wrap;}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(43,173,125,.2);}
   .dot.off{background:var(--slate-400);box-shadow:none;}
   .dot.err{background:var(--red);box-shadow:0 0 0 4px rgba(229,72,77,.2);}
 
-  #filterFilial{
+  #filterUnidade, #filterTipo, #filterStatus{
     background:var(--navy-800);
     color:#fff;
     border:1.5px solid rgba(255,255,255,.3);
@@ -72,8 +72,8 @@
     font-family:var(--font-body);
     cursor:pointer;
   }
-  #filterFilial:hover{border-color:rgba(255,255,255,.55);}
-  #filterFilial option{
+  #filterUnidade:hover, #filterTipo:hover, #filterStatus:hover{border-color:rgba(255,255,255,.55);}
+  #filterUnidade option, #filterTipo option, #filterStatus option{
     background:#ffffff;
     color:var(--slate-900);
   }
@@ -96,34 +96,6 @@
   .skel-row{height:42px;border-radius:8px;margin-bottom:8px;}
   @media (max-width:1100px){ .skel-stats{grid-template-columns:repeat(3,1fr);} .skel-panels{grid-template-columns:1fr;} }
 
-  /* ---------- config bar ---------- */
-  .config{
-    max-width:1320px;margin:-18px auto 0;padding:0 40px;position:relative;z-index:2;
-  }
-  .config-card{
-    background:var(--card);border-radius:var(--radius);
-    box-shadow:0 12px 30px rgba(15,37,68,.12);
-    padding:18px 22px;display:flex;gap:14px;flex-wrap:wrap;align-items:end;
-  }
-  .field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:180px;}
-  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--slate-600);font-weight:600;}
-  .field input{
-    border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-family:var(--font-mono);
-    font-size:13px;color:var(--slate-900);outline:none;transition:border-color .15s;
-  }
-  .field input:focus{border-color:var(--navy-700);}
-  .btn{
-    border:none;border-radius:9px;padding:10px 18px;font-weight:600;font-size:13px;cursor:pointer;
-    font-family:var(--font-body);transition:transform .1s, box-shadow .15s;white-space:nowrap;
-  }
-  .btn:active{transform:scale(.97);}
-  .btn-primary{background:var(--navy-900);color:#fff;}
-  .btn-primary:hover{box-shadow:0 6px 16px rgba(15,37,68,.28);}
-  .btn-ghost{background:transparent;color:var(--slate-600);border:1.5px solid var(--line);}
-  .btn-ghost:hover{border-color:var(--navy-700);color:var(--navy-900);}
-  .config-hint{width:100%;font-size:12px;color:var(--slate-400);margin-top:2px;}
-  .config-hint a{color:var(--navy-700);}
-
   /* ---------- layout geral ---------- */
   main{max-width:1320px;margin:0 auto;padding:28px 40px 60px;}
   .state-msg{
@@ -133,14 +105,15 @@
   .hidden{display:none !important;}
 
   /* ---------- cards de estatística ---------- */
-  .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;margin-bottom:26px;}
+  .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
   .stat{
-    background:var(--card);border-radius:var(--radius);padding:18px 18px 16px;
+    background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;
     border:1px solid var(--line);position:relative;overflow:hidden;
+    box-shadow:0 12px 30px rgba(15,37,68,.10);
   }
-  .stat .k{font-family:var(--font-mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--slate-600);}
-  .stat .v{font-family:var(--font-display);font-size:30px;font-weight:700;margin-top:6px;color:var(--slate-900);}
-  .stat .bar{height:4px;border-radius:2px;background:var(--line);margin-top:12px;overflow:hidden;}
+  .stat .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--slate-600);}
+  .stat .v{font-family:var(--font-display);font-size:26px;font-weight:700;margin-top:6px;color:var(--slate-900);}
+  .stat .bar{height:4px;border-radius:2px;background:var(--line);margin-top:10px;overflow:hidden;}
   .stat .bar i{display:block;height:100%;border-radius:2px;}
   .stat.total .bar i{background:var(--navy-700);width:100%;}
   .stat.green .v{color:var(--green);}
@@ -174,6 +147,13 @@
   .panel h3{font-family:var(--font-display);font-size:15px;margin:0 0 4px;}
   .panel .sub{font-size:12px;color:var(--slate-600);margin:0 0 14px;}
   .panel canvas{max-height:230px;}
+  .btn{
+    border:none;border-radius:9px;padding:10px 18px;font-weight:600;font-size:13px;cursor:pointer;
+    font-family:var(--font-body);transition:transform .1s, box-shadow .15s;white-space:nowrap;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-ghost{background:transparent;color:var(--slate-600);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--navy-700);color:var(--navy-900);}
   .btn-chip{
     flex:none;border:1.5px solid var(--line);background:#fff;color:var(--navy-700);
     font-family:var(--font-body);font-size:11.5px;font-weight:600;border-radius:20px;
@@ -202,13 +182,14 @@
     font-family:var(--font-body);background:#fff;color:var(--slate-900);outline:none;
   }
   .table-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  table{width:100%;min-width:820px;border-collapse:collapse;font-size:13px;}
+  table{width:100%;min-width:980px;border-collapse:collapse;font-size:13px;}
   thead th{
     text-align:left;padding:12px 14px;background:var(--navy-950);color:var(--slate-400);
     font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
-    position:sticky;top:0;cursor:pointer;user-select:none;white-space:nowrap;
+    position:sticky;top:0;white-space:nowrap;
   }
-  thead th:hover{color:#fff;}
+  thead th[data-key]{cursor:pointer;user-select:none;}
+  thead th[data-key]:hover{color:#fff;}
   thead th span.arrow{margin-left:4px;opacity:.35;display:inline-block;font-size:10px;}
   thead th.sorted{color:#fff;}
   thead th.sorted span.arrow{opacity:1;color:var(--amber);}
@@ -216,31 +197,27 @@
   tbody tr:hover{background:#f8faff;}
   td{padding:11px 14px;color:var(--slate-900);white-space:nowrap;}
   td.name{font-weight:600;}
+  td.name a{color:var(--navy-700);text-decoration:none;border-bottom:1.5px dashed var(--navy-700);}
+  td.name a:hover{color:var(--amber);border-color:var(--amber);}
   .badge{
     display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;
-    font-size:11.5px;font-weight:600;
+    font-size:11.5px;font-weight:600;white-space:nowrap;
   }
-  .badge.ativo{background:var(--green-soft);color:var(--green);}
+  .badge.ok{background:var(--green-soft);color:var(--green);}
   .badge.vencendo{background:var(--amber-soft);color:#c07f16;}
   .badge.vencido{background:var(--red-soft);color:var(--red);}
   .badge.outro{background:#eef1f7;color:var(--slate-600);}
-  .days{display:flex;align-items:center;gap:8px;min-width:120px;}
-  .days .track{width:60px;height:5px;border-radius:3px;background:var(--line);overflow:hidden;flex:none;}
-  .days .track i{display:block;height:100%;border-radius:3px;}
-  .days span.n{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
   tfoot td{padding:14px;text-align:center;color:var(--slate-400);font-size:12px;}
 
   /* ---------- cards mobile (telas < 768px) ---------- */
   .mobile-cards{display:none;flex-direction:column;gap:10px;}
   .mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .12s;}
   .mcard:hover{border-color:var(--navy-700);}
-  .mcard-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px;}
+  .mcard-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px;}
   .mcard-name{font-weight:700;font-size:14px;color:var(--slate-900);}
-  .mcard-filial{font-size:10.5px;color:var(--slate-600);font-family:var(--font-mono);white-space:nowrap;text-transform:uppercase;}
-  .mcard-func{font-size:11.5px;color:var(--slate-600);margin:-6px 0 10px;}
-  .mcard-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--slate-600);padding:5px 0;border-top:1px solid var(--line);}
-  .mcard-row:first-of-type{border-top:none;}
-  .mcard-pill{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:700;}
+  .mcard-unidade{font-size:10.5px;color:var(--slate-600);font-family:var(--font-mono);white-space:nowrap;text-transform:uppercase;}
+  .mcard-sub{font-size:11.5px;color:var(--slate-600);margin:0 0 10px;}
+  .mcard-chips{display:flex;flex-wrap:wrap;gap:6px;}
   @media (max-width:768px){
     .table-wrap{display:none;}
     .mobile-cards{display:flex;}
@@ -250,14 +227,14 @@
   .val.copyable{cursor:pointer;border-bottom:1.5px dashed var(--slate-400);}
   .val.copyable:hover{color:var(--navy-700);border-color:var(--navy-700);}
 
-  /* ---------- modal de detalhes do condutor ---------- */
+  /* ---------- modal de detalhes do veículo ---------- */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(10,25,48,.55);display:none;
     align-items:center;justify-content:center;z-index:50;padding:20px;
   }
   .modal-backdrop.open{display:flex;}
   .modal-card{
-    background:#fff;border-radius:var(--radius);max-width:620px;width:100%;
+    background:#fff;border-radius:var(--radius);max-width:720px;width:100%;
     max-height:92vh;overflow:hidden;box-shadow:0 24px 60px rgba(10,25,48,.35);
     display:flex;flex-direction:column;
   }
@@ -267,6 +244,12 @@
   }
   .modal-head h2{font-family:var(--font-display);margin:0 0 3px;font-size:17px;}
   .modal-head p{margin:0;color:var(--slate-400);font-size:12px;}
+  .modal-head-right{display:flex;align-items:center;gap:10px;}
+  .modal-drive{
+    background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);
+    border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;
+  }
+  .modal-drive:hover{background:rgba(255,255,255,.24);}
   .modal-close{
     background:rgba(255,255,255,.12);border:none;color:#fff;width:26px;height:26px;
     border-radius:50%;font-size:14px;cursor:pointer;flex:none;
@@ -286,14 +269,13 @@
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
   @media (max-width:1100px){
-    .stats{grid-template-columns:repeat(3,1fr);}
+    .stats{grid-template-columns:repeat(4,1fr);}
     .panels{grid-template-columns:1fr;}
   }
   @media (max-width:700px){
     .stats{grid-template-columns:repeat(2,1fr);}
     .road{padding:26px 20px 26px;}
     main{padding:22px 16px 50px;}
-    .config{padding:0 16px;}
   }
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;}
@@ -305,14 +287,17 @@
 <header class="road">
   <div class="road-top">
     <div class="road-title">
-      <span class="eyebrow">Viação · Gestão de Condutores</span>
-      <h1>Painel de Condutores</h1>
+      <span class="eyebrow">Viação · Gestão de Frota</span>
+      <h1>Painel de Frota</h1>
     </div>
     <div class="road-status">
       <span class="dot off" id="statusDot"></span>
       <span id="statusText">Aguardando conexão…</span>
-      <select id="filterFilial">
-        <option value="">Todas as filiais</option>
+      <select id="filterUnidade">
+        <option value="">Todas as unidades</option>
+      </select>
+      <select id="filterTipo">
+        <option value="">Todos os tipos</option>
       </select>
       <button class="btn btn-ghost" id="btnRefresh" style="border-color:rgba(255,255,255,.25);color:#fff;">Atualizar agora</button>
     </div>
@@ -344,45 +329,45 @@
 
   <div id="dashboard" class="hidden">
     <section class="stats" id="statsSection">
-      <div class="stat total" data-filter-type="" data-filter-value="">
-        <div class="k">Total de condutores</div>
+      <div class="stat total" data-flag="">
+        <div class="k">Total de veículos</div>
         <div class="v" id="stTotal">0</div>
         <div class="bar"><i></i></div>
       </div>
-      <div class="stat green" data-filter-type="der" data-filter-value="ATIVO">
-        <div class="k">DER ativo</div>
-        <div class="v" id="stDerAtivo">0</div>
-        <div class="bar"><i id="barDerAtivo" style="width:0%"></i></div>
+      <div class="stat red" data-flag="rastreador">
+        <div class="k">Rastreador c/ problema</div>
+        <div class="v" id="stRastreador">0</div>
+        <div class="bar"><i id="barRastreador" style="width:0%"></i></div>
       </div>
-      <div class="stat amber" data-filter-type="der" data-filter-value="VENCENDO">
-        <div class="k">DER vencendo</div>
-        <div class="v" id="stDerVencendo">0</div>
-        <div class="bar"><i id="barDerVencendo" style="width:0%"></i></div>
+      <div class="stat amber" data-flag="crlv">
+        <div class="k">CRLV pendente</div>
+        <div class="v" id="stCrlv">0</div>
+        <div class="bar"><i id="barCrlv" style="width:0%"></i></div>
       </div>
-      <div class="stat red" data-filter-type="der" data-filter-value="VENCIDO">
-        <div class="k">DER vencido</div>
-        <div class="v" id="stDerVencido">0</div>
-        <div class="bar"><i id="barDerVencido" style="width:0%"></i></div>
+      <div class="stat red" data-flag="despoluirVencido">
+        <div class="k">Despoluição vencida</div>
+        <div class="v" id="stDespVencido">0</div>
+        <div class="bar"><i id="barDespVencido" style="width:0%"></i></div>
       </div>
-      <div class="stat green" data-filter-type="cnh" data-filter-value="ATIVO">
-        <div class="k">CNH ativa</div>
-        <div class="v" id="stCnhAtivo">0</div>
-        <div class="bar"><i id="barCnhAtivo" style="width:0%"></i></div>
+      <div class="stat amber" data-flag="despoluirVencendo">
+        <div class="k">Despoluição vencendo/s. laudo</div>
+        <div class="v" id="stDespVencendo">0</div>
+        <div class="bar"><i id="barDespVencendo" style="width:0%"></i></div>
       </div>
-      <div class="stat red" data-filter-type="cnh" data-filter-value="VENCIDO">
-        <div class="k">CNH vencida</div>
-        <div class="v" id="stCnhVencido">0</div>
-        <div class="bar"><i id="barCnhVencido" style="width:0%"></i></div>
+      <div class="stat red" data-flag="tacografo">
+        <div class="k">Tacógrafo irregular</div>
+        <div class="v" id="stTacografo">0</div>
+        <div class="bar"><i id="barTacografo" style="width:0%"></i></div>
       </div>
-      <div class="stat gray" data-filter-type="cadastro" data-filter-value="SEM_CADASTRO">
-        <div class="k">Sem cadastro</div>
-        <div class="v" id="stSemCadastro">0</div>
-        <div class="bar"><i id="barSemCadastro" style="width:0%"></i></div>
+      <div class="stat gray" data-flag="seguro">
+        <div class="k">Seguro sem registro</div>
+        <div class="v" id="stSeguro">0</div>
+        <div class="bar"><i id="barSeguro" style="width:0%"></i></div>
       </div>
-      <div class="stat blue" data-filter-type="enviado" data-filter-value="AGUARDANDO">
-        <div class="k">Aguardando DER</div>
-        <div class="v" id="stEnviados">0</div>
-        <div class="bar"><i id="barEnviados" style="width:0%"></i></div>
+      <div class="stat red" data-flag="deer">
+        <div class="k">DEER vencido</div>
+        <div class="v" id="stDeer">0</div>
+        <div class="bar"><i id="barDeer" style="width:0%"></i></div>
       </div>
     </section>
 
@@ -390,37 +375,34 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h3>Condutores por filial</h3>
-            <p class="sub">Distribuição do quadro ativo em cada unidade</p>
+            <h3>Veículos por unidade</h3>
+            <p class="sub">Distribuição da frota em cada unidade</p>
           </div>
-          <button type="button" class="btn-chip hidden" id="btnAllFiliais">Ver todas as filiais</button>
+          <button type="button" class="btn-chip hidden" id="btnAllUnidades">Ver todas as unidades</button>
         </div>
-        <canvas id="chartFilial"></canvas>
+        <canvas id="chartUnidade"></canvas>
       </div>
       <div class="panel">
-        <h3>Situação documental</h3>
-        <p class="sub" id="chartStatusSub">DER x CNH — visão geral</p>
+        <h3>Situação da frota</h3>
+        <p class="sub">Pendências por categoria de documento</p>
         <canvas id="chartStatus"></canvas>
       </div>
     </section>
 
     <div class="toolbar">
       <div class="search-wrap">
-        <input type="text" id="search" placeholder="Buscar por nome, CPF, matrícula ou nº CNH…">
+        <input type="text" id="search" placeholder="Buscar por prefixo, placa, chassi ou renavam…">
         <button type="button" class="search-clear" id="searchClear">×</button>
       </div>
-      <select id="filterStatusDer">
-        <option value="">DER — todos</option>
-        <option value="ATIVO">DER ativo</option>
-        <option value="VENCENDO">DER vencendo (&lt;30d)</option>
-        <option value="VENCIDO">DER vencido</option>
-        <option value="SEM_CADASTRO">DER sem cadastro</option>
-      </select>
-      <select id="filterStatusCnh">
-        <option value="">CNH — todos</option>
-        <option value="ATIVO">CNH ativa</option>
-        <option value="VENCIDO">CNH vencida</option>
-        <option value="SEM_CADASTRO">CNH sem cadastro</option>
+      <select id="filterStatus">
+        <option value="">Status — todos</option>
+        <option value="rastreador">Rastreador c/ problema</option>
+        <option value="crlv">CRLV pendente</option>
+        <option value="despoluirVencido">Despoluição vencida</option>
+        <option value="despoluirVencendo">Despoluição vencendo/s. laudo</option>
+        <option value="tacografo">Tacógrafo irregular</option>
+        <option value="seguro">Seguro sem registro</option>
+        <option value="deer">DEER vencido</option>
       </select>
       <span class="count-pill" id="countPill">0 registros</span>
     </div>
@@ -429,18 +411,21 @@
       <table>
         <thead>
           <tr>
-            <th data-key="motorista">Motorista <span class="arrow"></span></th>
-            <th data-key="filial">Filial <span class="arrow"></span></th>
-            <th data-key="funcao">Função <span class="arrow"></span></th>
-            <th data-key="derVal">DER validade <span class="arrow"></span></th>
-            <th data-key="derDias">Dias rest. DER <span class="arrow"></span></th>
-            <th data-key="cnhVal">CNH validade <span class="arrow"></span></th>
-            <th data-key="cnhDias">Dias rest. CNH <span class="arrow"></span></th>
+            <th data-key="pref">Prefixo <span class="arrow"></span></th>
+            <th data-key="tipo">Tipo <span class="arrow"></span></th>
+            <th data-key="unidade">Unidade <span class="arrow"></span></th>
+            <th data-key="placa">Placa <span class="arrow"></span></th>
+            <th>Rastreador</th>
+            <th>CRLV 26</th>
+            <th>Despoluição</th>
+            <th>Tacógrafo</th>
+            <th>Seguro</th>
+            <th>DEER</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
         <tfoot>
-          <tr><td colspan="7" id="tfootMsg"></td></tr>
+          <tr><td colspan="10" id="tfootMsg"></td></tr>
         </tfoot>
       </table>
     </div>
@@ -459,40 +444,52 @@
   <div class="modal-card">
     <div class="modal-head">
       <div>
-        <h2 id="mdNome">—</h2>
+        <h2 id="mdPref">—</h2>
         <p id="mdSub">—</p>
       </div>
-      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-head-right">
+        <a href="#" target="_blank" rel="noopener" class="modal-drive hidden" id="mdDriveLink">Abrir pasta no Drive ↗</a>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="modal-grid">
-        <div class="modal-field"><span class="lbl">Matrícula</span><span class="val copyable" id="mdMat">—</span></div>
-        <div class="modal-field"><span class="lbl">CPF</span><span class="val copyable" id="mdCpf">—</span></div>
-        <div class="modal-field"><span class="lbl">Sexo</span><span class="val" id="mdSexo">—</span></div>
-        <div class="modal-field"><span class="lbl">Admissão</span><span class="val" id="mdAdmissao">—</span></div>
-        <div class="modal-field"><span class="lbl">DER validade</span><span class="val" id="mdDerVal">—</span></div>
-        <div class="modal-field"><span class="lbl">Status DER</span><span class="val" id="mdDerStatus">—</span></div>
-        <div class="modal-field"><span class="lbl">CNH nº</span><span class="val" id="mdCnhNum">—</span></div>
-        <div class="modal-field"><span class="lbl">CNH validade</span><span class="val" id="mdCnhVal">—</span></div>
-        <div class="modal-field"><span class="lbl">Status CNH</span><span class="val" id="mdCnhStatus">—</span></div>
-        <div class="modal-field"><span class="lbl">Peticionado</span><span class="val" id="mdPeticionado">—</span></div>
-        <div class="modal-field"><span class="lbl">Data peticion.</span><span class="val" id="mdDataPet">—</span></div>
-        <div class="modal-field"><span class="lbl">Nº peticion.</span><span class="val" id="mdNumPet">—</span></div>
+        <div class="modal-field"><span class="lbl">Placa</span><span class="val copyable" id="mdPlaca">—</span></div>
+        <div class="modal-field"><span class="lbl">Chassi</span><span class="val copyable" id="mdChassi">—</span></div>
+        <div class="modal-field"><span class="lbl">Renavam</span><span class="val copyable" id="mdRenavam">—</span></div>
+        <div class="modal-field"><span class="lbl">Marca / Modelo</span><span class="val" id="mdMarcaModelo">—</span></div>
+        <div class="modal-field"><span class="lbl">Carroceria</span><span class="val" id="mdCarroceria">—</span></div>
+        <div class="modal-field"><span class="lbl">Ano / Modelo</span><span class="val" id="mdAnoModelo">—</span></div>
+        <div class="modal-field"><span class="lbl">CNPJ</span><span class="val" id="mdCnpj">—</span></div>
+        <div class="modal-field"><span class="lbl">Compra</span><span class="val" id="mdCompra">—</span></div>
+        <div class="modal-field"><span class="lbl">Idade</span><span class="val" id="mdIdade">—</span></div>
+
+        <div class="modal-field"><span class="lbl">ID rastreador</span><span class="val" id="mdIdRastreador">—</span></div>
+        <div class="modal-field"><span class="lbl">Status rastreador</span><span class="val" id="mdStatusRastreador">—</span></div>
+        <div class="modal-field"><span class="lbl">CRLV 26 / 25</span><span class="val" id="mdCrlv">—</span></div>
+
+        <div class="modal-field"><span class="lbl">Despoluição venc.</span><span class="val" id="mdDespVenc">—</span></div>
+        <div class="modal-field"><span class="lbl">Status despoluição</span><span class="val" id="mdDespStatus">—</span></div>
+        <div class="modal-field"><span class="lbl">Tacógrafo venc.</span><span class="val" id="mdTacoVenc">—</span></div>
+        <div class="modal-field"><span class="lbl">Status tacógrafo</span><span class="val" id="mdTacoStatus">—</span></div>
+        <div class="modal-field"><span class="lbl">Nº apólice seguro</span><span class="val" id="mdApolice">—</span></div>
+        <div class="modal-field"><span class="lbl">Seguro até</span><span class="val" id="mdSeguroAte">—</span></div>
+        <div class="modal-field"><span class="lbl">DEER vencimento</span><span class="val" id="mdDeerVenc">—</span></div>
+        <div class="modal-field"><span class="lbl">Status DEER</span><span class="val" id="mdDeerStatus">—</span></div>
       </div>
-      <div class="modal-section-title">Problemas &amp; observações</div>
+      <div class="modal-section-title">Observação</div>
       <div class="modal-note" id="mdObs">—</div>
     </div>
   </div>
 </div>
 
-
 <script>
 (function(){
-  // Planilha fixa — Controle de Condutores
-  const SHEET_ID = '1V-yh0iUzolsuUw6s7GKIwo37Vdgpbn8qr7kB_CZ-hHE';
-  // Cada aba = uma filial. Para adicionar uma nova unidade, crie a aba na
-  // planilha com o nome da filial e inclua o mesmo nome nesta lista.
-  const SHEET_TABS = ['CONSELHEIRO LAFAIETE', 'BELEM','CANAA DOS CARAJAS', 'CATALAO', 'ARAXA', 'CONTAGEM', 'PARAUAPEBAS', 'SERRA DO SALITRE', 'SETE LAGOAS', 'TUCUMA'];
+  // Planilha fixa — RELAÇÃO DE FROTA VMG 2026, aba "Frota"
+  // Cabeçalho real está na linha 3 da planilha (linhas 1-2 ficam em branco),
+  // por isso pedimos ao gviz o intervalo a partir de A3 com headers=1.
+  const SHEET_ID = '1Ifls95c7CWJujD16v-1Iq5y3lJtH7gC6o3JQmbM1TB4';
+  const SHEET_TAB = 'Frota';
 
   const els = {
     btnRefresh: document.getElementById('btnRefresh'),
@@ -503,9 +500,9 @@
     errorDetail: document.getElementById('errorDetail'),
     dash: document.getElementById('dashboard'),
     search: document.getElementById('search'),
-    filterFilial: document.getElementById('filterFilial'),
-    filterStatusDer: document.getElementById('filterStatusDer'),
-    filterStatusCnh: document.getElementById('filterStatusCnh'),
+    filterUnidade: document.getElementById('filterUnidade'),
+    filterTipo: document.getElementById('filterTipo'),
+    filterStatus: document.getElementById('filterStatus'),
     tbody: document.getElementById('tbody'),
     mobileCards: document.getElementById('mobileCards'),
     countPill: document.getElementById('countPill'),
@@ -516,23 +513,40 @@
     searchClear: document.getElementById('searchClear'),
     modalBackdrop: document.getElementById('modalBackdrop'),
     modalClose: document.getElementById('modalClose'),
-    btnAllFiliais: document.getElementById('btnAllFiliais'),
+    btnAllUnidades: document.getElementById('btnAllUnidades'),
   };
 
-  let rawRows = [];      // dados normalizados
-  let currentPageRows = []; // linhas exibidas na página atual da tabela
-  let sortState = {key:'motorista', dir:1};
-  let charts = {filial:null, status:null};
+  let rawRows = [];
+  let currentPageRows = [];
+  let sortState = {key:'pref', dir:1};
+  let charts = {unidade:null, status:null};
   let refreshTimer = null;
   const PAGE_SIZE = 100;
   let currentPage = 1;
-  let cadastroFilterStatus = ''; // filtro unificado dos cards "Sem cadastro" / "Aguardando DER": '' | 'SEM_CADASTRO' | 'AGUARDANDO'
+  let activeFlag = ''; // '' | 'rastreador' | 'crlv' | 'despoluirVencido' | 'despoluirVencendo' | 'tacografo' | 'seguro' | 'deer'
 
-  function isEnviadoAguardando(r){
-    // enviado para o DER e ainda aguardando confirmação de validade —
-    // se o DER já está ATIVO, a confirmação já veio, então não conta como "aguardando"
-    return r.enviado === true && r.derStatus !== 'ATIVO';
-  }
+  const FLAG_FIELD = {
+    rastreador: 'flagRastreadorProblema',
+    crlv: 'flagCrlvPendente',
+    despoluirVencido: 'flagDespoluirVencido',
+    despoluirVencendo: 'flagDespoluirVencendo',
+    tacografo: 'flagTacografoIrregular',
+    seguro: 'flagSeguroSemRegistro',
+    deer: 'flagDeerVencido',
+  };
+  const FLAG_LABEL = {
+    rastreador: 'Rastreador c/ problema',
+    crlv: 'CRLV pendente',
+    despoluirVencido: 'Despoluição vencida',
+    despoluirVencendo: 'Despoluição vencendo/s. laudo',
+    tacografo: 'Tacógrafo irregular',
+    seguro: 'Seguro sem registro',
+    deer: 'DEER vencido',
+  };
+  const COL = {
+    rastreador:'#d21f2d', crlv:'#e2790a', despoluirVencido:'#d21f2d',
+    despoluirVencendo:'#e2790a', tacografo:'#c0392b', seguro:'#98a3b3', deer:'#9457d1',
+  };
 
   els.btnRefresh.addEventListener('click', () => loadData());
   els.search.addEventListener('input', () => {
@@ -550,39 +564,26 @@
   els.modalClose.addEventListener('click', closeModal);
   els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeModal(); });
-  els.filterFilial.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(true); });
-  els.btnAllFiliais.addEventListener('click', () => {
-    els.filterFilial.value = '';
+  els.filterUnidade.addEventListener('change', () => { currentPage = 1; render(true); });
+  els.filterTipo.addEventListener('change', () => { currentPage = 1; render(true); });
+  els.btnAllUnidades.addEventListener('click', () => {
+    els.filterUnidade.value = '';
+    currentPage = 1;
+    render(true);
+  });
+  els.filterStatus.addEventListener('change', () => {
+    activeFlag = els.filterStatus.value;
     currentPage = 1;
     syncActiveCards();
     render(true);
   });
-  els.filterStatusDer.addEventListener('change', () => { cadastroFilterStatus = ''; currentPage = 1; syncActiveCards(); render(true); });
-  els.filterStatusCnh.addEventListener('change', () => { cadastroFilterStatus = ''; currentPage = 1; syncActiveCards(); render(true); });
   els.pgPrev.addEventListener('click', () => { if(currentPage > 1){ currentPage--; render(); } });
   els.pgNext.addEventListener('click', () => { currentPage++; render(); });
-  document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
+  document.querySelectorAll('.stat[data-flag]').forEach(card => {
     card.addEventListener('click', () => {
-      const type = card.dataset.filterType;
-      const value = card.dataset.filterValue;
-      if(!type){
-        els.filterStatusDer.value = '';
-        els.filterStatusCnh.value = '';
-        cadastroFilterStatus = '';
-      } else if(type === 'der'){
-        els.filterStatusDer.value = (els.filterStatusDer.value === value) ? '' : value;
-        els.filterStatusCnh.value = '';
-        cadastroFilterStatus = '';
-      } else if(type === 'cnh'){
-        els.filterStatusCnh.value = (els.filterStatusCnh.value === value) ? '' : value;
-        els.filterStatusDer.value = '';
-        cadastroFilterStatus = '';
-      } else if(type === 'cadastro' || type === 'enviado'){
-        // filtro unificado: clicar em "Sem cadastro" ou "Enviados" alterna entre os dois estados
-        els.filterStatusDer.value = '';
-        els.filterStatusCnh.value = '';
-        cadastroFilterStatus = (cadastroFilterStatus === value) ? '' : value;
-      }
+      const flag = card.dataset.flag;
+      activeFlag = (activeFlag === flag) ? '' : flag;
+      els.filterStatus.value = activeFlag;
       currentPage = 1;
       syncActiveCards();
       render(true);
@@ -590,23 +591,12 @@
   });
 
   function syncActiveCards(){
-    document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
-      const type = card.dataset.filterType;
-      const value = card.dataset.filterValue;
-      let isActive = false;
-      if(!type){
-        isActive = !els.filterStatusDer.value && !els.filterStatusCnh.value && !cadastroFilterStatus;
-      } else if(type === 'der'){
-        isActive = els.filterStatusDer.value === value;
-      } else if(type === 'cnh'){
-        isActive = els.filterStatusCnh.value === value;
-      } else if(type === 'cadastro' || type === 'enviado'){
-        isActive = cadastroFilterStatus === value;
-      }
-      card.classList.toggle('active', isActive);
+    document.querySelectorAll('.stat[data-flag]').forEach(card => {
+      card.classList.toggle('active', card.dataset.flag === activeFlag);
     });
   }
-  document.querySelectorAll('thead th').forEach(th=>{
+
+  document.querySelectorAll('thead th[data-key]').forEach(th=>{
     th.addEventListener('click', ()=>{
       const key = th.dataset.key;
       sortState.dir = (sortState.key === key) ? -sortState.dir : 1;
@@ -621,19 +611,12 @@
     els.statusText.textContent = text;
   }
 
-  function excelDateToJs(serial){
-    if(serial === null || serial === undefined || serial === '') return null;
-    // gviz já entrega objetos Date() como string "Date(y,m,d)"
-    return null;
-  }
-
   function parseGvizDate(cell){
     if(!cell) return null;
     if(cell.v === null || cell.v === undefined || cell.v === '') return null;
     if(typeof cell.v === 'string' && cell.v.startsWith('Date(')){
       const parts = cell.v.replace('Date(','').replace(')','').split(',').map(Number);
       const d = new Date(parts[0], parts[1], parts[2]);
-      // datas "vazias" no Sheets viram serial 0 = 30/12/1899 (ou próximo) — tratar como sem cadastro
       if(parts[0] < 1950) return null;
       return d;
     }
@@ -645,16 +628,7 @@
     return (cell.f !== undefined && cell.f !== null) ? String(cell.f) : (cell.v ?? '');
   }
 
-  function cellBool(cell){
-    // coluna ENVIADOS vem como checkbox (TRUE/FALSE) do Google Sheets
-    if(!cell) return false;
-    if(cell.v === true) return true;
-    if(typeof cell.v === 'string'){
-      const t = cell.v.trim().toUpperCase();
-      return t === 'TRUE' || t === 'SIM' || t === 'VERDADEIRO';
-    }
-    return false;
-  }
+  function normText(s){ return (s||'').toString().trim().toUpperCase(); }
 
   function daysUntil(date){
     if(!date) return null;
@@ -664,148 +638,135 @@
     return Math.round((d - now) / 86400000);
   }
 
-  function parseNumOrNull(text){
-    const t = (text||'').toString().trim();
-    if(t === '') return null;
-    const n = Number(t);
-    return isNaN(n) ? null : n;
-  }
-
   function sanitizeDays(v){
-    // descarta valores absurdos (ex: -46237), que aparecem quando a planilha calcula
-    // "dias restantes" em cima de uma data de validade vazia (bug clássico do Sheets/Excel)
     if(v === null || v === undefined || isNaN(v)) return null;
-    if(Math.abs(v) > 3650) return null; // > 10 anos não é um prazo real de validade
+    if(Math.abs(v) > 3650) return null;
     return v;
   }
 
-  function normalizeStatus(text, days, vencendoThreshold){
-    const t = (text||'').toString().trim().toUpperCase();
-    let base;
-    if(days === null || isNaN(days)){
-      // sem data de validade nem dias confiáveis: nunca é "vencido", é falta de cadastro —
-      // mesmo que o texto da própria planilha diga "VENCIDO" (pode estar contaminado pelo
-      // mesmo bug de dias calculados sobre data vazia)
-      return 'SEM_CADASTRO';
-    }
-    if(t.includes('VENCID')) base = 'VENCIDO';
-    else if(t.includes('ATIV')) base = 'ATIVO';
-    else if(days < 0) base = 'VENCIDO';
-    else base = 'ATIVO';
-    if(base === 'ATIVO' && vencendoThreshold != null && days < vencendoThreshold){
-      return 'VENCENDO';
-    }
-    return base;
-  }
-
-  function parseTabRows(data, tabName){
+  function parseFrotaRows(data){
     const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
     const idx = (name) => cols.findIndex(c => c === name);
-    const idxAny = (...names) => { for(const n of names){ const i = idx(n); if(i>-1) return i; } return -1; };
 
-    const iNome = idx('MOTORISTAS');
-    const iCpf = idx('CPF');
-    const iMat = idxAny('MAT.', 'MATRÍCULA', 'MAT');
-    const iAdmissao = idx('ADMISSÃO');
-    const iFuncao = idx('FUNÇÃO');
-    const iFilial = idx('FILIAL');
-    const iSexo = idx('SEXO');
-    const iDerVal = idx('DER VALIDADE');
-    const iDerDias = idx('DIAS REST');
-    const iDerStatus = idx('STATUS DEER');
-    const iCnhNum = idxAny('Nº CNH', 'N° CNH', 'NUMERO CNH', 'NÚMERO CNH');
-    const iCnhVal = idx('CNH VALIDADE');
-    const iCnhDias = idx('DIAS REST2');
-    const iCnhStatus = idx('STATUS CNH');
-    const iPeticionado = idx('PETICIONADO');
-    const iDataPet = idx('DATA PETICIONAMENTO');
-    const iNumPet = idxAny('N. PETICIONAMENTO', 'Nº PETICIONAMENTO', 'NUMERO PETICIONAMENTO');
-    const iProblemas = idx('PROBLEMAS');
+    const iNum = idx('Nº');
+    const iPref = idx('PREF.');
+    const iLinkPref = idx('LINK_PREF'); // coluna auxiliar opcional criada pelo Apps Script
+    const iTipo = idx('TIPO');
+    const iIdRastreador = idx('ID RASTREADOR');
+    const iStatusRastreador = idx('STATUS RASTREADOR');
+    const iUnidade = idx('UNIDADE');
+    const iPlaca = idx('PLACA');
+    const iCnpj = idx('CNPJ');
+    const iAnoModelo = idx('ANO / MODELO');
+    const iChassi = idx('CHASSI');
+    const iRenavam = idx('RENAVAN');
+    const iMarca = idx('MARCA');
+    const iModeloChassi = idx('MODELO DE CHASSI');
+    const iModeloCarroceria = idx('MODELO DE CARROCERIA');
+    const iCompra = idx('COMPRA');
+    const iIdade = idx('IDADE');
+    const iCrlv26 = idx('CRLV 26');
+    const iCrlv25 = idx('CRLV 25');
+    const iDespVenc = idx('DESPOLUIR VENC.');
+    const iDespDias = idx('DIAS REST');
+    const iStatusDesp = idx('STATUS DESPOLUIR');
+    const iTacoVenc = idx('TACÓGRAFO VENC.');
+    const iTacoDias = idx('DIAS REST3');
+    const iStatusTaco = idx('STATUS TACÓGRAFO');
+    const iApolice = idx('Nº APÓLICE SEGURO');
+    const iSeguroAte = idx('SEGURO ATÉ');
+    const iSeguroDias = idx('DIAS REST2');
+    const iStatusSeguro = idx('STATUS SEGURO');
+    const iDeerVenc = idx('DEER VENCIMENTO');
+    const iDeerDias = idx('DIAS REST.');
+    const iStatusDeer = idx('STATUS DEER');
     const iObs = idx('OBSERVAÇÃO');
-    const iEnviado = idx('ENVIADOS');
 
     return data.table.rows
       .map(r => r.c)
-      .filter(c => c && c[iNome] && cellText(c[iNome]))
+      .filter(c => c && iPlaca > -1 && cellText(c[iPlaca]))
       .map(c => {
-        const derValDate = parseGvizDate(c[iDerVal]);
-        const cnhValDate = parseGvizDate(c[iCnhVal]);
-        const admissaoDate = iAdmissao>-1 ? parseGvizDate(c[iAdmissao]) : null;
-        const dataPetDate = iDataPet>-1 ? parseGvizDate(c[iDataPet]) : null;
-        const derDiasCalc = sanitizeDays(derValDate ? daysUntil(derValDate) : parseNumOrNull(iDerDias>-1 ? cellText(c[iDerDias]) : ''));
-        const cnhDiasCalc = sanitizeDays(cnhValDate ? daysUntil(cnhValDate) : parseNumOrNull(iCnhDias>-1 ? cellText(c[iCnhDias]) : ''));
+        const despVencDate = iDespVenc>-1 ? parseGvizDate(c[iDespVenc]) : null;
+        const tacoVencDate = iTacoVenc>-1 ? parseGvizDate(c[iTacoVenc]) : null;
+        const seguroAteDate = iSeguroAte>-1 ? parseGvizDate(c[iSeguroAte]) : null;
+        const deerVencDate = iDeerVenc>-1 ? parseGvizDate(c[iDeerVenc]) : null;
+
+        const statusRastreador = normText(iStatusRastreador>-1 ? cellText(c[iStatusRastreador]) : '');
+        const crlv26 = normText(iCrlv26>-1 ? cellText(c[iCrlv26]) : '');
+        const statusDesp = normText(iStatusDesp>-1 ? cellText(c[iStatusDesp]) : '');
+        const statusTaco = normText(iStatusTaco>-1 ? cellText(c[iStatusTaco]) : '');
+        const statusSeguro = normText(iStatusSeguro>-1 ? cellText(c[iStatusSeguro]) : '');
+        const statusDeer = normText(iStatusDeer>-1 ? cellText(c[iStatusDeer]) : '');
+
+        const linkPref = (iLinkPref>-1 ? cellText(c[iLinkPref]) : '').toString().trim();
+
         return {
-          motorista: cellText(c[iNome]),
-          cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
-          matricula: iMat>-1 ? cellText(c[iMat]) : '',
-          admissao: admissaoDate,
-          funcao: iFuncao>-1 ? cellText(c[iFuncao]) : '',
-          filial: tabName,
-          sexo: iSexo>-1 ? cellText(c[iSexo]) : '',
-          derVal: derValDate,
-          derDias: isNaN(derDiasCalc) ? null : derDiasCalc,
-          derStatus: normalizeStatus(iDerStatus>-1 ? cellText(c[iDerStatus]) : '', derDiasCalc, 30),
-          cnhNumero: iCnhNum>-1 ? cellText(c[iCnhNum]) : '',
-          cnhVal: cnhValDate,
-          cnhDias: isNaN(cnhDiasCalc) ? null : cnhDiasCalc,
-          cnhStatus: normalizeStatus(iCnhStatus>-1 ? cellText(c[iCnhStatus]) : '', cnhDiasCalc),
-          peticionado: iPeticionado>-1 ? cellText(c[iPeticionado]) : '',
-          dataPeticionamento: dataPetDate,
-          numPeticionamento: iNumPet>-1 ? cellText(c[iNumPet]) : '',
-          problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
+          numero: iNum>-1 ? cellText(c[iNum]) : '',
+          pref: iPref>-1 ? cellText(c[iPref]) : '',
+          linkPref: linkPref && linkPref.startsWith('http') ? linkPref : '',
+          tipo: iTipo>-1 ? cellText(c[iTipo]) : '',
+          idRastreador: iIdRastreador>-1 ? cellText(c[iIdRastreador]) : '',
+          statusRastreador,
+          unidade: iUnidade>-1 ? cellText(c[iUnidade]) : '',
+          placa: iPlaca>-1 ? cellText(c[iPlaca]) : '',
+          cnpj: iCnpj>-1 ? cellText(c[iCnpj]) : '',
+          anoModelo: iAnoModelo>-1 ? cellText(c[iAnoModelo]) : '',
+          chassi: iChassi>-1 ? cellText(c[iChassi]) : '',
+          renavam: iRenavam>-1 ? cellText(c[iRenavam]) : '',
+          marca: iMarca>-1 ? cellText(c[iMarca]) : '',
+          modeloChassi: iModeloChassi>-1 ? cellText(c[iModeloChassi]) : '',
+          modeloCarroceria: iModeloCarroceria>-1 ? cellText(c[iModeloCarroceria]) : '',
+          compra: iCompra>-1 ? cellText(c[iCompra]) : '',
+          idade: iIdade>-1 ? cellText(c[iIdade]) : '',
+          crlv26,
+          crlv25: normText(iCrlv25>-1 ? cellText(c[iCrlv25]) : ''),
+          despVenc: despVencDate,
+          despDias: sanitizeDays(despVencDate ? daysUntil(despVencDate) : Number(iDespDias>-1 ? cellText(c[iDespDias]) : NaN)),
+          statusDesp,
+          tacoVenc: tacoVencDate,
+          tacoDias: sanitizeDays(tacoVencDate ? daysUntil(tacoVencDate) : Number(iTacoDias>-1 ? cellText(c[iTacoDias]) : NaN)),
+          statusTaco,
+          apolice: iApolice>-1 ? cellText(c[iApolice]) : '',
+          seguroAte: seguroAteDate,
+          seguroDias: sanitizeDays(seguroAteDate ? daysUntil(seguroAteDate) : Number(iSeguroDias>-1 ? cellText(c[iSeguroDias]) : NaN)),
+          statusSeguro,
+          deerVenc: deerVencDate,
+          deerDias: sanitizeDays(deerVencDate ? daysUntil(deerVencDate) : Number(iDeerDias>-1 ? cellText(c[iDeerDias]) : NaN)),
+          statusDeer,
           observacao: iObs>-1 ? cellText(c[iObs]) : '',
-          enviado: iEnviado>-1 ? cellBool(c[iEnviado]) : false,
+          // flags usados pelos cards, gráfico e filtro de status
+          flagRastreadorProblema: statusRastreador === 'INOPERANTE' || statusRastreador === 'SEM RASTREADOR',
+          flagCrlvPendente: crlv26 !== 'SIM',
+          flagDespoluirVencido: statusDesp === 'VENCIDO',
+          flagDespoluirVencendo: statusDesp === 'VENCENDO' || statusDesp === 'SEM LAUDO',
+          flagTacografoIrregular: statusTaco === 'VENCIDO' || statusTaco === 'VENCENDO',
+          flagSeguroSemRegistro: statusSeguro === '',
+          flagDeerVencido: statusDeer === 'VENCIDO',
         };
       });
-  }
-
-  async function fetchTab(tabName){
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}&_=${Date.now()}`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status + ' em ' + tabName);
-    const text = await res.text();
-    const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-    const data = JSON.parse(jsonStr);
-    if(!data.table || !data.table.rows) throw new Error('Formato inesperado em ' + tabName);
-    return parseTabRows(data, tabName);
   }
 
   async function loadData(){
     setStatus('off','Carregando…');
     try{
-      const results = await Promise.allSettled(SHEET_TABS.map(fetchTab));
-      let merged = [];
-      let failed = [];
-      results.forEach((r, i) => {
-        if(r.status === 'fulfilled') merged = merged.concat(r.value);
-        else failed.push(SHEET_TABS[i]);
-      });
-      if(merged.length === 0) throw new Error('Nenhuma aba pôde ser lida (' + (failed.join(', ') || 'verifique os nomes das abas') + ')');
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_TAB)}&range=A3:AV100000&headers=1&_=${Date.now()}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+      const data = JSON.parse(jsonStr);
+      if(!data.table || !data.table.rows) throw new Error('Formato inesperado recebido da planilha');
 
-      // remove duplicatas (ex: motorista que ficou repetido por causa de aba clonada)
-      const seen = new Set();
-      const deduped = [];
-      merged.forEach(r => {
-        const key = (r.cpf && r.cpf.trim())
-          ? r.cpf.trim().toUpperCase()
-          : (r.motorista.trim().toUpperCase() + '|' + (r.cpf||''));
-        if(!seen.has(key)){
-          seen.add(key);
-          deduped.push(r);
-        }
-      });
-      merged = deduped;
+      rawRows = parseFrotaRows(data);
+      if(rawRows.length === 0) throw new Error('Nenhum veículo encontrado (verifique se a coluna PLACA está preenchida)');
 
-      rawRows = merged;
       els.empty.classList.add('hidden');
       els.error.classList.add('hidden');
       els.dash.classList.remove('hidden');
       const ts = new Date().toLocaleTimeString('pt-BR');
-      setStatus('ok', failed.length
-        ? `Conectado (${SHEET_TABS.length - failed.length}/${SHEET_TABS.length} filiais) · ${ts}`
-        : `Conectado · ${ts}`);
+      setStatus('ok', `Conectado · ${ts}`);
 
-      buildFilialOptions();
+      buildFilterOptions();
       syncActiveCards();
       render(true);
 
@@ -816,17 +777,23 @@
       els.dash.classList.add('hidden');
       els.empty.classList.add('hidden');
       els.error.classList.remove('hidden');
-      els.errorDetail.textContent = 'Detalhe técnico: ' + err.message + '. Se você abriu este arquivo dando duplo clique nele (endereço começando com "file://"), o navegador bloqueia esse tipo de requisição por segurança — hospede o arquivo em um servidor (GitHub Pages, Netlify, ou o servidor da empresa). Confira também se a planilha está com o link liberado e se os nomes das abas em SHEET_TABS batem exatamente com os nomes reais.';
+      els.errorDetail.textContent = 'Detalhe técnico: ' + err.message + '. Se você abriu este arquivo dando duplo clique nele (endereço começando com "file://"), o navegador bloqueia esse tipo de requisição por segurança — hospede o arquivo em um servidor (GitHub Pages, Netlify, ou o servidor da empresa). Confira também se a planilha está com o link liberado ("Qualquer pessoa com o link pode visualizar") e se o nome da aba é exatamente "Frota".';
       setStatus('err','Falha ao carregar');
     }
   }
 
-  function buildFilialOptions(){
-    const atual = els.filterFilial.value;
-    const filiais = [...new Set(rawRows.map(r=>r.filial))].sort();
-    els.filterFilial.innerHTML = '<option value="">Todas as filiais</option>' +
-      filiais.map(f=>`<option value="${f}">${f}</option>`).join('');
-    if(filiais.includes(atual)) els.filterFilial.value = atual;
+  function buildFilterOptions(){
+    const atualUnidade = els.filterUnidade.value;
+    const unidades = [...new Set(rawRows.map(r=>r.unidade).filter(Boolean))].sort();
+    els.filterUnidade.innerHTML = '<option value="">Todas as unidades</option>' +
+      unidades.map(u=>`<option value="${u}">${u}</option>`).join('');
+    if(unidades.includes(atualUnidade)) els.filterUnidade.value = atualUnidade;
+
+    const atualTipo = els.filterTipo.value;
+    const tipos = [...new Set(rawRows.map(r=>r.tipo).filter(Boolean))].sort();
+    els.filterTipo.innerHTML = '<option value="">Todos os tipos</option>' +
+      tipos.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if(tipos.includes(atualTipo)) els.filterTipo.value = atualTipo;
   }
 
   function fmtDate(d){
@@ -834,66 +801,87 @@
     return d.toLocaleDateString('pt-BR');
   }
 
-  function daysBar(days, status){
-    if(status === 'SEM_CADASTRO' || days === null || isNaN(days)) return {pct:0, color:'var(--slate-400)', label:'—'};
-    let color = 'var(--green)';
-    if(days < 0) color = 'var(--red)';
-    else if(days <= 30) color = 'var(--amber)';
-    const pct = days < 0 ? 100 : Math.max(4, Math.min(100, (Math.min(days,180)/180)*100));
-    return {pct, color, label: days < 0 ? 'Vencido' : `${days}d`};
+  function badge(label, kind){
+    const cls = kind === 'ok' ? 'ok' : kind === 'vencendo' ? 'vencendo' : kind === 'vencido' ? 'vencido' : 'outro';
+    return `<span class="badge ${cls}">${escapeHtml(label)}</span>`;
+  }
+
+  function badgeRastreador(r){
+    if(r.statusRastreador === 'FUNCIONANDO') return badge('Funcionando','ok');
+    if(r.statusRastreador === 'INOPERANTE') return badge('Inoperante','vencido');
+    if(r.statusRastreador === 'SEM RASTREADOR') return badge('Sem rastreador','outro');
+    return badge(r.statusRastreador || '—','outro');
+  }
+  function badgeCrlv(r){
+    return r.crlv26 === 'SIM' ? badge('OK','ok') : badge('Pendente','vencendo');
+  }
+  function badgeDesp(r){
+    if(r.statusDesp === 'ATIVO') return badge('Ativo','ok');
+    if(r.statusDesp === 'VENCENDO') return badge('Vencendo','vencendo');
+    if(r.statusDesp === 'VENCIDO') return badge('Vencido','vencido');
+    if(r.statusDesp === 'SEM LAUDO') return badge('Sem laudo','vencendo');
+    return badge('—','outro');
+  }
+  function badgeTaco(r){
+    if(r.statusTaco === 'ATIVO') return badge('Ativo','ok');
+    if(r.statusTaco === 'VENCENDO') return badge('Vencendo','vencendo');
+    if(r.statusTaco === 'VENCIDO') return badge('Vencido','vencido');
+    if(r.statusTaco === 'PRELIMINAR') return badge('Preliminar','outro');
+    return badge('—','outro');
+  }
+  function badgeSeguro(r){
+    if(r.statusSeguro === 'ATIVO') return badge('Ativo','ok');
+    if(r.statusSeguro === '') return badge('Sem registro','outro');
+    return badge(r.statusSeguro,'outro');
+  }
+  function badgeDeer(r){
+    if(r.statusDeer === 'ATIVO') return badge('Ativo','ok');
+    if(r.statusDeer === 'VENCIDO') return badge('Vencido','vencido');
+    if(r.statusDeer === 'IGNORAR') return badge('Ignorar','outro');
+    return badge('—','outro');
+  }
+
+  function escapeHtml(s){
+    return (s??'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
   function render(updateCharts){
     const q = els.search.value.trim().toLowerCase();
-    const qDigits = q.replace(/\D/g,'');
-    const fFilial = els.filterFilial.value;
-    const fDer = els.filterStatusDer.value;
-    const fCnh = els.filterStatusCnh.value;
-    els.btnAllFiliais.classList.toggle('hidden', !fFilial);
+    const fUnidade = els.filterUnidade.value;
+    const fTipo = els.filterTipo.value;
+    els.btnAllUnidades.classList.toggle('hidden', !fUnidade);
 
     function matchesSearch(r){
       if(!q) return true;
-      if(r.motorista.toLowerCase().includes(q)) return true;
-      if(r.matricula && r.matricula.toLowerCase().includes(q)) return true;
-      if(qDigits.length >= 3){
-        if(r.cpf && r.cpf.replace(/\D/g,'').includes(qDigits)) return true;
-        if(r.cnhNumero && r.cnhNumero.replace(/\D/g,'').includes(qDigits)) return true;
-      }
+      if(r.pref && r.pref.toLowerCase().includes(q)) return true;
+      if(r.placa && r.placa.toLowerCase().includes(q)) return true;
+      if(r.chassi && r.chassi.toLowerCase().includes(q)) return true;
+      if(r.renavam && r.renavam.toLowerCase().includes(q)) return true;
       return false;
     }
+    function matchesFlag(r){
+      if(!activeFlag) return true;
+      const field = FLAG_FIELD[activeFlag];
+      return field ? r[field] === true : true;
+    }
 
-    // linhas para a tabela (todos os filtros, incluindo busca)
     let rows = rawRows.filter(r=>{
-      if(fFilial && r.filial !== fFilial) return false;
-      if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
-      } else if(cadastroFilterStatus === 'AGUARDANDO'){
-        if(!isEnviadoAguardando(r)) return false;
-      } else {
-        if(fDer && r.derStatus !== fDer) return false;
-        if(fCnh && r.cnhStatus !== fCnh) return false;
-      }
+      if(fUnidade && r.unidade !== fUnidade) return false;
+      if(fTipo && r.tipo !== fTipo) return false;
+      if(!matchesFlag(r)) return false;
       if(!matchesSearch(r)) return false;
       return true;
     });
 
-    // linhas para os gráficos (mesmos filtros, exceto a busca — pedido do usuário)
+    // linhas para os gráficos: mesmos filtros de unidade/tipo, sem a busca nem o filtro de status ativo
     let chartRows = rawRows.filter(r=>{
-      if(fFilial && r.filial !== fFilial) return false;
-      if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
-      } else if(cadastroFilterStatus === 'AGUARDANDO'){
-        if(!isEnviadoAguardando(r)) return false;
-      } else {
-        if(fDer && r.derStatus !== fDer) return false;
-        if(fCnh && r.cnhStatus !== fCnh) return false;
-      }
+      if(fUnidade && r.unidade !== fUnidade) return false;
+      if(fTipo && r.tipo !== fTipo) return false;
       return true;
     });
 
     rows.sort((a,b)=>{
       let va = a[sortState.key], vb = b[sortState.key];
-      if(va instanceof Date || vb instanceof Date){ va = va?va.getTime():-Infinity; vb = vb?vb.getTime():-Infinity; }
       if(va === null || va === undefined) va = '';
       if(vb === null || vb === undefined) vb = '';
       if(typeof va === 'string') va = va.toLowerCase();
@@ -904,36 +892,33 @@
     });
     updateSortIndicators();
 
-    // stats relativas à filial selecionada no seletor (não aos demais filtros)
-    const statsBase = fFilial ? rawRows.filter(r => r.filial === fFilial) : rawRows;
+    // stats relativas à unidade/tipo selecionados (não ao filtro de status nem à busca)
+    const statsBase = chartRows;
     const total = statsBase.length;
-    const derAtivo = statsBase.filter(r=>r.derStatus==='ATIVO').length;
-    const derVencendo = statsBase.filter(r=>r.derStatus==='VENCENDO').length;
-    const derVencido = statsBase.filter(r=>r.derStatus==='VENCIDO').length;
-    const cnhAtivo = statsBase.filter(r=>r.cnhStatus==='ATIVO').length;
-    const cnhVencido = statsBase.filter(r=>r.cnhStatus==='VENCIDO').length;
-    const semCadastro = statsBase.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length;
-    const enviados = statsBase.filter(isEnviadoAguardando).length;
+    const counts = {};
+    Object.keys(FLAG_FIELD).forEach(k=>{
+      counts[k] = statsBase.filter(r=>r[FLAG_FIELD[k]]).length;
+    });
 
     document.getElementById('stTotal').textContent = total;
-    document.getElementById('stDerAtivo').textContent = derAtivo;
-    document.getElementById('stDerVencendo').textContent = derVencendo;
-    document.getElementById('stDerVencido').textContent = derVencido;
-    document.getElementById('stCnhAtivo').textContent = cnhAtivo;
-    document.getElementById('stCnhVencido').textContent = cnhVencido;
-    document.getElementById('stSemCadastro').textContent = semCadastro;
-    document.getElementById('stEnviados').textContent = enviados;
-    document.getElementById('barDerAtivo').style.width = total? (derAtivo/total*100)+'%':'0%';
-    document.getElementById('barDerVencendo').style.width = total? (derVencendo/total*100)+'%':'0%';
-    document.getElementById('barDerVencido').style.width = total? (derVencido/total*100)+'%':'0%';
-    document.getElementById('barCnhAtivo').style.width = total? (cnhAtivo/total*100)+'%':'0%';
-    document.getElementById('barCnhVencido').style.width = total? (cnhVencido/total*100)+'%':'0%';
-    document.getElementById('barSemCadastro').style.width = total? (semCadastro/total*100)+'%':'0%';
-    document.getElementById('barEnviados').style.width = total? (enviados/total*100)+'%':'0%';
+    document.getElementById('stRastreador').textContent = counts.rastreador;
+    document.getElementById('stCrlv').textContent = counts.crlv;
+    document.getElementById('stDespVencido').textContent = counts.despoluirVencido;
+    document.getElementById('stDespVencendo').textContent = counts.despoluirVencendo;
+    document.getElementById('stTacografo').textContent = counts.tacografo;
+    document.getElementById('stSeguro').textContent = counts.seguro;
+    document.getElementById('stDeer').textContent = counts.deer;
+
+    document.getElementById('barRastreador').style.width = total? (counts.rastreador/total*100)+'%':'0%';
+    document.getElementById('barCrlv').style.width = total? (counts.crlv/total*100)+'%':'0%';
+    document.getElementById('barDespVencido').style.width = total? (counts.despoluirVencido/total*100)+'%':'0%';
+    document.getElementById('barDespVencendo').style.width = total? (counts.despoluirVencendo/total*100)+'%':'0%';
+    document.getElementById('barTacografo').style.width = total? (counts.tacografo/total*100)+'%':'0%';
+    document.getElementById('barSeguro').style.width = total? (counts.seguro/total*100)+'%':'0%';
+    document.getElementById('barDeer').style.width = total? (counts.deer/total*100)+'%':'0%';
 
     els.countPill.textContent = `${rows.length} registro${rows.length===1?'':'s'} (de ${total})`;
 
-    // paginação (100 por página) — cards e gráficos usam os conjuntos completos; só a tabela é fatiada
     const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     if(currentPage > totalPages) currentPage = totalPages;
     if(currentPage < 1) currentPage = 1;
@@ -944,18 +929,21 @@
     els.pgNext.disabled = currentPage >= totalPages;
     document.getElementById('pagination').style.display = rows.length > PAGE_SIZE ? 'flex' : 'none';
 
-    // tabela
     els.tbody.innerHTML = pageRows.map((r,i)=>{
-      const der = daysBar(r.derDias, r.derStatus);
-      const cnh = daysBar(r.cnhDias, r.cnhStatus);
+      const prefCell = r.linkPref
+        ? `<a href="${escapeHtml(r.linkPref)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(r.pref || '—')}</a>`
+        : escapeHtml(r.pref || '—');
       return `<tr data-i="${i}">
-        <td class="name">${escapeHtml(r.motorista)}</td>
-        <td>${escapeHtml(r.filial)}</td>
-        <td>${escapeHtml(r.funcao)}</td>
-        <td>${fmtDate(r.derVal)}</td>
-        <td><div class="days"><div class="track"><i style="width:${der.pct}%;background:${der.color}"></i></div><span class="n">${der.label}</span></div></td>
-        <td>${fmtDate(r.cnhVal)}</td>
-        <td><div class="days"><div class="track"><i style="width:${cnh.pct}%;background:${cnh.color}"></i></div><span class="n">${cnh.label}</span></div></td>
+        <td class="name">${prefCell}</td>
+        <td>${escapeHtml(r.tipo)}</td>
+        <td>${escapeHtml(r.unidade)}</td>
+        <td>${escapeHtml(r.placa)}</td>
+        <td>${badgeRastreador(r)}</td>
+        <td>${badgeCrlv(r)}</td>
+        <td>${badgeDesp(r)}</td>
+        <td>${badgeTaco(r)}</td>
+        <td>${badgeSeguro(r)}</td>
+        <td>${badgeDeer(r)}</td>
       </tr>`;
     }).join('');
 
@@ -963,18 +951,16 @@
       tr.addEventListener('click', () => openModal(currentPageRows[Number(tr.dataset.i)]));
     });
 
-    // cards mobile (telas < 768px)
     els.mobileCards.innerHTML = pageRows.map((r,i)=>{
-      const der = daysBar(r.derDias, r.derStatus);
-      const cnh = daysBar(r.cnhDias, r.cnhStatus);
       return `<div class="mcard" data-i="${i}">
         <div class="mcard-top">
-          <span class="mcard-name">${escapeHtml(r.motorista)}</span>
-          <span class="mcard-filial">${escapeHtml(r.filial)}</span>
+          <span class="mcard-name">${escapeHtml(r.pref || '—')}</span>
+          <span class="mcard-unidade">${escapeHtml(r.unidade)}</span>
         </div>
-        <div class="mcard-func">${escapeHtml(r.funcao || '—')}</div>
-        <div class="mcard-row"><span>DER · ${fmtDate(r.derVal)}</span><span class="mcard-pill" style="background:${der.color}22;color:${der.color}">${der.label}</span></div>
-        <div class="mcard-row"><span>CNH · ${fmtDate(r.cnhVal)}</span><span class="mcard-pill" style="background:${cnh.color}22;color:${cnh.color}">${cnh.label}</span></div>
+        <div class="mcard-sub">${escapeHtml(r.tipo)} · ${escapeHtml(r.placa)}</div>
+        <div class="mcard-chips">
+          ${badgeRastreador(r)}${badgeCrlv(r)}${badgeDesp(r)}${badgeTaco(r)}${badgeSeguro(r)}${badgeDeer(r)}
+        </div>
       </div>`;
     }).join('');
 
@@ -982,15 +968,12 @@
       card.addEventListener('click', () => openModal(currentPageRows[Number(card.dataset.i)]));
     });
     if(rows.length===0){
-      els.mobileCards.innerHTML = '<div class="state-msg">Nenhum condutor encontrado com os filtros atuais.</div>';
+      els.mobileCards.innerHTML = '<div class="state-msg">Nenhum veículo encontrado com os filtros atuais.</div>';
     }
 
-    els.tfootMsg.textContent = rows.length===0 ? 'Nenhum condutor encontrado com os filtros atuais.' : '';
+    els.tfootMsg.textContent = rows.length===0 ? 'Nenhum veículo encontrado com os filtros atuais.' : '';
 
-    if(updateCharts){
-      const mode = fDer ? 'der' : (fCnh ? 'cnh' : (cadastroFilterStatus ? 'cadastro' : 'total'));
-      renderCharts(chartRows.length ? chartRows : rawRows, statsBase, mode);
-    }
+    if(updateCharts) renderCharts(chartRows, statsBase);
   }
 
   function updateSortIndicators(){
@@ -1000,19 +983,6 @@
       th.classList.toggle('sorted', active);
       if(span) span.textContent = active ? (sortState.dir === 1 ? '▲' : '▼') : '↕';
     });
-  }
-
-  function fmtDateTime(d){
-    if(!d) return '—';
-    return d.toLocaleDateString('pt-BR');
-  }
-
-  function statusLabel(status){
-    if(status === 'ATIVO') return 'Ativo';
-    if(status === 'VENCENDO') return 'Vencendo (< 30 dias)';
-    if(status === 'VENCIDO') return 'Vencido';
-    if(status === 'SEM_CADASTRO') return 'Sem cadastro';
-    return '—';
   }
 
   function copyToClipboard(text, el){
@@ -1032,28 +1002,44 @@
 
   function openModal(r){
     if(!r) return;
-    document.getElementById('mdNome').textContent = r.motorista || '—';
-    document.getElementById('mdSub').textContent = [r.funcao, r.filial].filter(Boolean).join(' · ') || '—';
-    const matEl = document.getElementById('mdMat');
-    const cpfEl = document.getElementById('mdCpf');
-    matEl.textContent = r.matricula || '—';
-    cpfEl.textContent = r.cpf || '—';
-    matEl.onclick = () => copyToClipboard(r.matricula, matEl);
-    cpfEl.onclick = () => copyToClipboard(r.cpf, cpfEl);
-    document.getElementById('mdSexo').textContent = r.sexo || '—';
-    document.getElementById('mdAdmissao').textContent = fmtDateTime(r.admissao);
-    document.getElementById('mdDerVal').textContent = fmtDateTime(r.derVal);
-    document.getElementById('mdDerStatus').textContent = statusLabel(r.derStatus);
-    document.getElementById('mdCnhNum').textContent = r.cnhNumero || '—';
-    document.getElementById('mdCnhVal').textContent = fmtDateTime(r.cnhVal);
-    document.getElementById('mdCnhStatus').textContent = statusLabel(r.cnhStatus);
-    document.getElementById('mdPeticionado').textContent = r.peticionado || '—';
-    document.getElementById('mdDataPet').textContent = fmtDateTime(r.dataPeticionamento);
-    document.getElementById('mdNumPet').textContent = r.numPeticionamento || '—';
-    const obsParts = [];
-    if(r.problemas) obsParts.push('Problemas: ' + r.problemas);
-    if(r.observacao) obsParts.push(r.observacao);
-    document.getElementById('mdObs').textContent = obsParts.length ? obsParts.join(' — ') : 'Nenhuma observação registrada.';
+    document.getElementById('mdPref').textContent = r.pref ? ('Prefixo ' + r.pref) : '—';
+    document.getElementById('mdSub').textContent = [r.tipo, r.unidade].filter(Boolean).join(' · ') || '—';
+
+    const driveLink = document.getElementById('mdDriveLink');
+    if(r.linkPref){ driveLink.href = r.linkPref; driveLink.classList.remove('hidden'); }
+    else { driveLink.classList.add('hidden'); }
+
+    const placaEl = document.getElementById('mdPlaca');
+    const chassiEl = document.getElementById('mdChassi');
+    const renavamEl = document.getElementById('mdRenavam');
+    placaEl.textContent = r.placa || '—';
+    chassiEl.textContent = r.chassi || '—';
+    renavamEl.textContent = r.renavam || '—';
+    placaEl.onclick = () => copyToClipboard(r.placa, placaEl);
+    chassiEl.onclick = () => copyToClipboard(r.chassi, chassiEl);
+    renavamEl.onclick = () => copyToClipboard(r.renavam, renavamEl);
+
+    document.getElementById('mdMarcaModelo').textContent = [r.marca, r.modeloChassi].filter(Boolean).join(' ') || '—';
+    document.getElementById('mdCarroceria').textContent = r.modeloCarroceria || '—';
+    document.getElementById('mdAnoModelo').textContent = r.anoModelo || '—';
+    document.getElementById('mdCnpj').textContent = r.cnpj || '—';
+    document.getElementById('mdCompra').textContent = r.compra || '—';
+    document.getElementById('mdIdade').textContent = r.idade ? (r.idade + ' anos') : '—';
+
+    document.getElementById('mdIdRastreador').textContent = r.idRastreador || '—';
+    document.getElementById('mdStatusRastreador').textContent = r.statusRastreador || '—';
+    document.getElementById('mdCrlv').textContent = `26: ${r.crlv26 || '—'} · 25: ${r.crlv25 || '—'}`;
+
+    document.getElementById('mdDespVenc').textContent = fmtDate(r.despVenc);
+    document.getElementById('mdDespStatus').textContent = r.statusDesp || '—';
+    document.getElementById('mdTacoVenc').textContent = fmtDate(r.tacoVenc);
+    document.getElementById('mdTacoStatus').textContent = r.statusTaco || '—';
+    document.getElementById('mdApolice').textContent = r.apolice || '—';
+    document.getElementById('mdSeguroAte').textContent = fmtDate(r.seguroAte);
+    document.getElementById('mdDeerVenc').textContent = fmtDate(r.deerVenc);
+    document.getElementById('mdDeerStatus').textContent = r.statusDeer || '—';
+
+    document.getElementById('mdObs').textContent = r.observacao ? r.observacao : 'Nenhuma observação registrada.';
     els.modalBackdrop.classList.add('open');
   }
 
@@ -1061,124 +1047,41 @@
     els.modalBackdrop.classList.remove('open');
   }
 
-  function badge(problemas){
-    const p = (problemas||'').toString().trim();
-    if(!p || p.toUpperCase()==='NÃO' || p.toUpperCase()==='NAO') return '<span class="badge outro">Sem pendência</span>';
-    return `<span class="badge vencido">${escapeHtml(p)}</span>`;
-  }
+  function renderCharts(chartRows, statsBase){
+    // por unidade
+    const byUnidade = {};
+    chartRows.forEach(r=>{ if(r.unidade) byUnidade[r.unidade] = (byUnidade[r.unidade]||0)+1; });
+    const unidades = Object.keys(byUnidade).sort((a,b)=>byUnidade[b]-byUnidade[a]);
+    const unidadeVals = unidades.map(u=>byUnidade[u]);
 
-  function escapeHtml(s){
-    return (s??'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  function applyChartStatusFilter(type, value){
-    // aplica o filtro de status vindo de um clique no gráfico; não faz nada se já estiver ativo
-    if(type === 'der'){
-      if(els.filterStatusDer.value === value) return false;
-      els.filterStatusDer.value = value;
-      els.filterStatusCnh.value = '';
-      cadastroFilterStatus = '';
-    } else if(type === 'cnh'){
-      if(els.filterStatusCnh.value === value) return false;
-      els.filterStatusCnh.value = value;
-      els.filterStatusDer.value = '';
-      cadastroFilterStatus = '';
-    } else if(type === 'cadastro'){
-      if(cadastroFilterStatus === value) return false;
-      cadastroFilterStatus = value;
-      els.filterStatusDer.value = '';
-      els.filterStatusCnh.value = '';
-    }
-    return true;
-  }
-
-  function renderCharts(filialRows, statusRows, mode){
-    // por filial
-    const byFilial = {};
-    filialRows.forEach(r=>{ byFilial[r.filial] = (byFilial[r.filial]||0)+1; });
-    const filiais = Object.keys(byFilial).sort((a,b)=>byFilial[b]-byFilial[a]);
-    const filialVals = filiais.map(f=>byFilial[f]);
-
-    if(charts.filial) charts.filial.destroy();
-    charts.filial = new Chart(document.getElementById('chartFilial'), {
+    if(charts.unidade) charts.unidade.destroy();
+    charts.unidade = new Chart(document.getElementById('chartUnidade'), {
       type:'bar',
-      data:{ labels: filiais, datasets:[{ data: filialVals, backgroundColor: '#1e4278', borderRadius:6, maxBarThickness:34 }]},
+      data:{ labels: unidades, datasets:[{ data: unidadeVals, backgroundColor: '#1e4278', borderRadius:6, maxBarThickness:34 }]},
       options:{
         responsive:true, maintainAspectRatio:false,
         onClick:(evt, elements)=>{
           if(!elements.length) return;
-          const clickedFilial = filiais[elements[0].index];
-          if(els.filterFilial.value === clickedFilial) return; // já filtrando essa filial: nada acontece
-          els.filterFilial.value = clickedFilial;
+          const clicked = unidades[elements[0].index];
+          if(els.filterUnidade.value === clicked) return;
+          els.filterUnidade.value = clicked;
           currentPage = 1;
-          syncActiveCards();
           render(true);
         },
         onHover:(evt, elements)=>{ evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
         plugins:{legend:{display:false}},
         scales:{
-          x:{ticks:{font:{family:'Inter', size:11}}, grid:{display:false}},
+          x:{ticks:{font:{family:'Inter', size:10}}, grid:{display:false}},
           y:{beginAtZero:true, ticks:{font:{family:'Inter', size:11}}, grid:{color:'#eef1f7'}}
         }
       }
     });
 
-    // situação documental — inteligente conforme o card/filtro ativo
-    // paleta: DER (mais importante) usa cores fortes e saturadas — verde/laranja/vermelho vivos.
-    // CNH (secundário) usa tons de azul/roxo, para não competir visualmente com o DER.
-    const COL = {
-      derAtivo:    '#1a9c5c', // verde forte
-      derVencendo: '#e2790a', // laranja forte (bem distinto do amarelo/roxo da CNH)
-      derVencido:  '#d21f2d', // vermelho forte
-      cnhAtiva:    '#4f7cd6', // azul suave
-      cnhVencida:  '#9457d1', // roxo suave
-      semCadastro: '#98a3b3', // cinza neutro
-      aguardando:  '#0e9490', // teal — bem diferente das outras
-    };
-    let labels, data, colors, subtitle, targets;
-    if(mode === 'der'){
-      labels = ['DER ativo','DER vencendo','DER vencido'];
-      data = [
-        statusRows.filter(r=>r.derStatus==='ATIVO').length,
-        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
-        statusRows.filter(r=>r.derStatus==='VENCIDO').length
-      ];
-      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido];
-      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'}];
-      subtitle = 'DER — ativos, vencendo e vencidos';
-    } else if(mode === 'cnh'){
-      labels = ['CNH ativa','CNH vencida'];
-      data = [
-        statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
-        statusRows.filter(r=>r.cnhStatus==='VENCIDO').length
-      ];
-      colors = [COL.cnhAtiva, COL.cnhVencida];
-      targets = [{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'}];
-      subtitle = 'CNH — ativas e vencidas';
-    } else if(mode === 'cadastro'){
-      labels = ['Sem cadastro','Aguardando DER'];
-      data = [
-        statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length,
-        statusRows.filter(isEnviadoAguardando).length
-      ];
-      colors = [COL.semCadastro, COL.aguardando];
-      targets = [{type:'cadastro',value:'SEM_CADASTRO'},{type:'cadastro',value:'AGUARDANDO'}];
-      subtitle = 'Sem cadastro x Enviados aguardando confirmação do DER';
-    } else {
-      labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida','Sem cadastro'];
-      data = [
-        statusRows.filter(r=>r.derStatus==='ATIVO').length,
-        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
-        statusRows.filter(r=>r.derStatus==='VENCIDO').length,
-        statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
-        statusRows.filter(r=>r.cnhStatus==='VENCIDO').length,
-        statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length
-      ];
-      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.cnhAtiva, COL.cnhVencida, COL.semCadastro];
-      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'}];
-      subtitle = 'DER x CNH — visão geral completa (inclui sem cadastro)';
-    }
-    document.getElementById('chartStatusSub').textContent = subtitle;
+    // situação da frota — uma fatia por categoria de pendência
+    const labels = Object.keys(FLAG_LABEL).map(k=>FLAG_LABEL[k]);
+    const data = Object.keys(FLAG_LABEL).map(k=>statsBase.filter(r=>r[FLAG_FIELD[k]]).length);
+    const colors = Object.keys(FLAG_LABEL).map(k=>COL[k]);
+    const keys = Object.keys(FLAG_LABEL);
 
     if(charts.status) charts.status.destroy();
     charts.status = new Chart(document.getElementById('chartStatus'), {
@@ -1188,21 +1091,19 @@
         responsive:true, maintainAspectRatio:false, cutout:'62%',
         onClick:(evt, elements)=>{
           if(!elements.length) return;
-          const target = targets[elements[0].index];
-          if(!target) return;
-          const changed = applyChartStatusFilter(target.type, target.value);
-          if(!changed) return; // já filtrando essa fatia: nada acontece
+          const flag = keys[elements[0].index];
+          activeFlag = (activeFlag === flag) ? '' : flag;
+          els.filterStatus.value = activeFlag;
           currentPage = 1;
           syncActiveCards();
           render(true);
         },
         onHover:(evt, elements)=>{ evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
-        plugins:{legend:{position:'bottom', labels:{font:{family:'Inter', size:11}, boxWidth:10, padding:14}}}
+        plugins:{legend:{position:'bottom', labels:{font:{family:'Inter', size:10}, boxWidth:10, padding:12}}}
       }
     });
   }
 
-  // carrega automaticamente ao abrir a página
   loadData();
 })();
 </script>
