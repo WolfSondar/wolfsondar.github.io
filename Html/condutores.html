@@ -224,6 +224,14 @@
   .badge.vencendo{background:var(--amber-soft);color:#c07f16;}
   .badge.vencido{background:var(--red-soft);color:var(--red);}
   .badge.outro{background:#eef1f7;color:var(--slate-600);}
+  .badge-multa{
+    display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;
+    font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
+    background:var(--red-soft);color:var(--red);border:1px solid rgba(229,72,77,.35);
+    vertical-align:middle;margin-left:8px;
+  }
+  td.name{display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+  .mcard-name-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;}
   .days{display:flex;align-items:center;gap:8px;min-width:120px;}
   .days .track{width:60px;height:5px;border-radius:3px;background:var(--line);overflow:hidden;flex:none;}
   .days .track i{display:block;height:100%;border-radius:3px;}
@@ -282,6 +290,18 @@
     margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--line);
   }
   .modal-note{background:var(--bg);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--slate-900);line-height:1.45;margin-top:8px;max-height:80px;overflow-y:auto;}
+  .multa-item{border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;line-height:1.4;border:1px solid var(--line);}
+  .multa-item:last-child{margin-bottom:0;}
+  .multa-item.pendente{background:var(--red-soft);border-color:rgba(229,72,77,.35);}
+  .multa-item.resolvida{background:var(--bg);opacity:.8;}
+  .multa-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;}
+  .multa-desc{font-weight:600;color:var(--slate-900);}
+  .multa-item.resolvida .multa-desc{color:var(--slate-600);font-weight:500;}
+  .multa-meta{font-family:var(--font-mono);font-size:11px;color:var(--slate-600);}
+  .multa-status{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:2px 8px;border-radius:20px;flex:none;}
+  .multa-status.pendente{background:var(--red);color:#fff;}
+  .multa-status.resolvida{background:var(--line);color:var(--slate-600);}
+  .modal-section-title.has-multas{color:var(--red);}
   @media (max-width:600px){ .modal-grid{grid-template-columns:1fr 1fr;} }
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
@@ -479,6 +499,10 @@
         <div class="modal-field"><span class="lbl">Data peticion.</span><span class="val" id="mdDataPet">—</span></div>
         <div class="modal-field"><span class="lbl">Nº peticion.</span><span class="val" id="mdNumPet">—</span></div>
       </div>
+      <div id="mdMultasSection" class="hidden">
+        <div class="modal-section-title" id="mdMultasTitle">Multas</div>
+        <div id="mdMultasList"></div>
+      </div>
       <div class="modal-section-title">Problemas &amp; observações</div>
       <div class="modal-note" id="mdObs">—</div>
     </div>
@@ -493,6 +517,11 @@
   // Cada aba = uma filial. Para adicionar uma nova unidade, crie a aba na
   // planilha com o nome da filial e inclua o mesmo nome nesta lista.
   const SHEET_TABS = ['CONSELHEIRO LAFAIETE', 'BELEM','CANAA DOS CARAJAS', 'CATALAO', 'ARAXA', 'CONTAGEM', 'PARAUAPEBAS', 'SERRA DO SALITRE', 'SETE LAGOAS', 'TUCUMA'];
+
+  // Planilha de Multas (separada da planilha de condutores)
+  const SHEET_ID_MULTAS = '1KAlerqNKe29NMIg9Ym5x_5xyUiUD8rboIhecnEOE2fU';
+  // Nome da aba dentro da planilha de multas. Ajuste aqui se o nome da aba for diferente.
+  const MULTAS_TAB = 'Página1';
 
   const els = {
     btnRefresh: document.getElementById('btnRefresh'),
@@ -520,6 +549,7 @@
   };
 
   let rawRows = [];      // dados normalizados
+  let rawMultas = [];    // multas normalizadas (só as que têm CONDUTOR preenchido)
   let currentPageRows = []; // linhas exibidas na página atual da tabela
   let sortState = {key:'motorista', dir:1};
   let charts = {filial:null, status:null};
@@ -759,6 +789,95 @@
       });
   }
 
+  // ---------- multas: normalização e cruzamento com condutores ----------
+  function normalizeCpf(text){
+    return (text||'').toString().replace(/\D/g,'');
+  }
+
+  function normalizeName(text){
+    return (text||'').toString()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // remove acentos
+      .trim().toUpperCase().replace(/\s+/g,' ');
+  }
+
+  function parseMultasRows(data){
+    const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
+    const idx = (name) => cols.findIndex(c => c === name);
+    const idxAny = (...names) => { for(const n of names){ const i = idx(n); if(i>-1) return i; } return -1; };
+
+    const iCondutor = idx('CONDUTOR');
+    const iCpf = idx('CPF');
+    const iData = idx('DATA');
+    const iDesc = idx('DESCRICAO') > -1 ? idx('DESCRICAO') : idx('DESCRIÇÃO');
+    const iPlaca = idxAny('PLACA', 'PLACA ');
+    const iChassi = idx('CHASSI');
+    const iRenavan = idx('RENAVAN');
+    const iFrota = idx('FROTA');
+    const iObs = idx('OBS');
+    const iResolvido = idx('RESOLVIDO');
+
+    return data.table.rows
+      .map(r => r.c)
+      .filter(c => c && iCondutor > -1 && cellText(c[iCondutor]))
+      .map(c => ({
+        condutor: cellText(c[iCondutor]),
+        cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
+        data: parseGvizDate(c[iData]),
+        descricao: iDesc>-1 ? cellText(c[iDesc]) : '',
+        placa: iPlaca>-1 ? cellText(c[iPlaca]) : '',
+        chassi: iChassi>-1 ? cellText(c[iChassi]) : '',
+        renavan: iRenavan>-1 ? cellText(c[iRenavan]) : '',
+        frota: iFrota>-1 ? cellText(c[iFrota]) : '',
+        obs: iObs>-1 ? cellText(c[iObs]) : '',
+        resolvido: iResolvido>-1 ? cellBool(c[iResolvido]) : false,
+      }))
+      // descarta linhas "-" ou sem condutor de verdade (situação "Outro", sem nome)
+      .filter(m => m.condutor && normalizeName(m.condutor) !== '-' && normalizeName(m.condutor) !== '');
+  }
+
+  async function fetchMultas(){
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID_MULTAS}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(MULTAS_TAB)}&_=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status + ' na planilha de multas');
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    const data = JSON.parse(jsonStr);
+    if(!data.table || !data.table.rows) throw new Error('Formato inesperado na planilha de multas');
+    return parseMultasRows(data);
+  }
+
+  // vincula as multas de rawMultas a cada condutor: prioridade pro CPF (mais confiável),
+  // com fallback por nome normalizado quando o CPF estiver vazio/divergente
+  function attachMultas(condutorRows, multas){
+    const byCpf = {};
+    const byName = {};
+    multas.forEach(m => {
+      const cpfKey = normalizeCpf(m.cpf);
+      if(cpfKey){ (byCpf[cpfKey] = byCpf[cpfKey] || []).push(m); }
+      const nameKey = normalizeName(m.condutor);
+      if(nameKey){ (byName[nameKey] = byName[nameKey] || []).push(m); }
+    });
+    condutorRows.forEach(r => {
+      const cpfKey = normalizeCpf(r.cpf);
+      const nameKey = normalizeName(r.motorista);
+      let found = (cpfKey && byCpf[cpfKey]) ? byCpf[cpfKey] : (byName[nameKey] || []);
+      // remove duplicatas (caso a mesma multa bata por CPF e por nome)
+      const seen = new Set();
+      found = found.filter(m => {
+        const k = (m.condutor+'|'+m.data+'|'+m.descricao+'|'+m.placa);
+        if(seen.has(k)) return false;
+        seen.add(k); return true;
+      });
+      found = found.slice().sort((a,b) => {
+        if(a.resolvido !== b.resolvido) return a.resolvido ? 1 : -1; // pendentes primeiro
+        const ta = a.data ? a.data.getTime() : 0, tb = b.data ? b.data.getTime() : 0;
+        return tb - ta; // mais recentes primeiro
+      });
+      r.multas = found;
+      r.multasPendentes = found.filter(m => !m.resolvido).length;
+    });
+  }
+
   async function fetchTab(tabName){
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}&_=${Date.now()}`;
     const res = await fetch(url);
@@ -795,6 +914,15 @@
         }
       });
       merged = deduped;
+
+      // planilha de multas: busca separada, não deve travar o painel se falhar
+      try{
+        rawMultas = await fetchMultas();
+      }catch(errMultas){
+        console.warn('Não foi possível carregar a planilha de multas:', errMultas);
+        rawMultas = [];
+      }
+      attachMultas(merged, rawMultas);
 
       rawRows = merged;
       els.empty.classList.add('hidden');
@@ -948,8 +1076,9 @@
     els.tbody.innerHTML = pageRows.map((r,i)=>{
       const der = daysBar(r.derDias, r.derStatus);
       const cnh = daysBar(r.cnhDias, r.cnhStatus);
+      const multaTag = r.multasPendentes>0 ? `<span class="badge-multa" title="${r.multasPendentes} multa(s) pendente(s)">Multa</span>` : '';
       return `<tr data-i="${i}">
-        <td class="name">${escapeHtml(r.motorista)}</td>
+        <td class="name">${escapeHtml(r.motorista)}${multaTag}</td>
         <td>${escapeHtml(r.filial)}</td>
         <td>${escapeHtml(r.funcao)}</td>
         <td>${fmtDate(r.derVal)}</td>
@@ -967,9 +1096,10 @@
     els.mobileCards.innerHTML = pageRows.map((r,i)=>{
       const der = daysBar(r.derDias, r.derStatus);
       const cnh = daysBar(r.cnhDias, r.cnhStatus);
+      const multaTagM = r.multasPendentes>0 ? `<span class="badge-multa" title="${r.multasPendentes} multa(s) pendente(s)">Multa</span>` : '';
       return `<div class="mcard" data-i="${i}">
         <div class="mcard-top">
-          <span class="mcard-name">${escapeHtml(r.motorista)}</span>
+          <span class="mcard-name-wrap"><span class="mcard-name">${escapeHtml(r.motorista)}</span>${multaTagM}</span>
           <span class="mcard-filial">${escapeHtml(r.filial)}</span>
         </div>
         <div class="mcard-func">${escapeHtml(r.funcao || '—')}</div>
@@ -1054,7 +1184,40 @@
     if(r.problemas) obsParts.push('Problemas: ' + r.problemas);
     if(r.observacao) obsParts.push(r.observacao);
     document.getElementById('mdObs').textContent = obsParts.length ? obsParts.join(' — ') : 'Nenhuma observação registrada.';
+    renderMultasModal(r);
     els.modalBackdrop.classList.add('open');
+  }
+
+  function renderMultasModal(r){
+    const section = document.getElementById('mdMultasSection');
+    const list = document.getElementById('mdMultasList');
+    const title = document.getElementById('mdMultasTitle');
+    const multas = r.multas || [];
+    if(!multas.length){
+      section.classList.add('hidden');
+      list.innerHTML = '';
+      return;
+    }
+    section.classList.remove('hidden');
+    const pendentes = multas.filter(m=>!m.resolvido).length;
+    title.textContent = pendentes>0 ? `Multas (${pendentes} pendente${pendentes===1?'':'s'})` : 'Multas (histórico)';
+    title.classList.toggle('has-multas', pendentes>0);
+    list.innerHTML = multas.map(m => {
+      const cls = m.resolvido ? 'resolvida' : 'pendente';
+      const meta = [
+        m.data ? fmtDate(m.data) : null,
+        m.placa ? ('Placa ' + m.placa) : null,
+        m.frota ? ('Frota ' + m.frota) : null,
+      ].filter(Boolean).join(' · ');
+      return `<div class="multa-item ${cls}">
+        <div class="multa-top">
+          <span class="multa-desc">${escapeHtml(m.descricao || 'Multa sem descrição')}</span>
+          <span class="multa-status ${cls}">${m.resolvido ? 'Resolvida' : 'Pendente'}</span>
+        </div>
+        <div class="multa-meta">${escapeHtml(meta || '—')}</div>
+        ${m.obs ? `<div class="multa-meta" style="margin-top:3px;">${escapeHtml(m.obs)}</div>` : ''}
+      </div>`;
+    }).join('');
   }
 
   function closeModal(){
