@@ -302,6 +302,12 @@
   .multa-status.pendente{background:var(--red);color:#fff;}
   .multa-status.resolvida{background:var(--line);color:var(--slate-600);}
   .modal-section-title.has-multas{color:var(--red);}
+  .docpend-tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .docpend-tag{
+    display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;
+    font-size:11.5px;font-weight:600;background:var(--red-soft);color:var(--red);
+    border:1px solid rgba(229,72,77,.35);
+  }
   @media (max-width:600px){ .modal-grid{grid-template-columns:1fr 1fr;} }
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
@@ -504,6 +510,14 @@
         <div class="modal-field"><span class="lbl">Data peticion.</span><span class="val" id="mdDataPet">—</span></div>
         <div class="modal-field"><span class="lbl">Nº peticion.</span><span class="val" id="mdNumPet">—</span></div>
       </div>
+      <div id="mdDocsPendSection" class="hidden">
+        <div class="modal-section-title has-multas">Documentação pendente</div>
+        <div id="mdDocsPendList" class="docpend-tags"></div>
+      </div>
+      <div id="mdInfoSection" class="hidden">
+        <div class="modal-section-title">Observação (Controle de Documentação)</div>
+        <div class="modal-note" id="mdInfo">—</div>
+      </div>
       <div id="mdMultasSection" class="hidden">
         <div class="modal-section-title" id="mdMultasTitle">Multas</div>
         <div id="mdMultasList"></div>
@@ -529,6 +543,10 @@
   const SHEET_ID_MULTAS = '1KAlerqNKe29NMIg9Ym5x_5xyUiUD8rboIhecnEOE2fU';
   // Nome da aba dentro da planilha de multas. Ajuste aqui se o nome da aba for diferente.
   const MULTAS_TAB = 'Página1';
+
+  // Planilha de Controle de Documentação (separada da planilha de condutores).
+  // Também dividida por aba com o nome da filial — reaproveita SHEET_TABS.
+  const SHEET_ID_DOCS = '1-pFdr863Az92E-PJbnIBKNfwDEuSlrbZARNB6KpgMRc';
 
   const els = {
     btnRefresh: document.getElementById('btnRefresh'),
@@ -772,7 +790,6 @@
     const iNumPet = idxAny('N. PETICIONAMENTO', 'Nº PETICIONAMENTO', 'NUMERO PETICIONAMENTO');
     const iProblemas = idx('PROBLEMAS');
     const iObs = idx('OBSERVAÇÃO');
-    const iEnviado = idx('ENVIADOS');
 
     return data.table.rows
       .map(r => r.c)
@@ -804,7 +821,11 @@
           numPeticionamento: iNumPet>-1 ? cellText(c[iNumPet]) : '',
           problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
           observacao: iObs>-1 ? cellText(c[iObs]) : '',
-          enviado: iEnviado>-1 ? cellBool(c[iEnviado]) : false,
+          // "enviado" (aguardando retorno do DER) agora vem da planilha de Controle de
+          // Documentação (coluna DER) — preenchido depois em attachDocs().
+          enviado: false,
+          docPendencias: [],
+          docInformacao: '',
         };
       });
   }
@@ -898,6 +919,90 @@
     });
   }
 
+  // ---------- Controle de Documentação: normalização e cruzamento com condutores ----------
+  // rótulos curtos usados como tags no card do motorista, na mesma ordem das colunas da planilha
+  const DOC_FIELD_DEFS = [
+    {header:'CTPS', label:'CTPS'},
+    {header:'CNH', label:'CNH'},
+    {header:'CURSO TRANSP. COLETIVO', label:'Curso'},
+    {header:'CERTIDÃO CRIMINAL', label:'Criminal'},
+    {header:'CERTIDÃO BONS ANTECEDENTES', label:'Antecedentes'},
+    {header:'PRONTUARIO CONDUTOR', label:'Prontuario'},
+    {header:'COMPROVANTE ENDEREÇO', label:'Comprovante Endereço'},
+  ];
+
+  function parseDocsTabRows(data){
+    const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
+    const idx = (name) => cols.findIndex(c => c === name);
+
+    const iNome = idx('MOTORISTA');
+    const iDer = idx('DER');
+    const iInfo = idx('INFORMAÇÃO');
+    const fieldIdx = DOC_FIELD_DEFS.map(f => ({...f, i: idx(f.header)}));
+
+    return data.table.rows
+      .map(r => r.c)
+      .filter(c => c && iNome>-1 && cellText(c[iNome]))
+      .map(c => {
+        // qualquer status diferente de "OK" (inclusive vazio) entra como pendência —
+        // o texto exato (VENCIDO, FALTA, ERRO...) não importa, só o fato de não estar OK
+        const pendencias = fieldIdx
+          .filter(f => f.i > -1)
+          .filter(f => cellText(c[f.i]).toString().trim().toUpperCase() !== 'OK')
+          .map(f => f.label);
+        const derVal = iDer>-1 ? cellText(c[iDer]).toString().trim().toUpperCase() : '';
+        return {
+          motorista: cellText(c[iNome]),
+          pendencias,
+          derOk: derVal === 'OK',
+          informacao: iInfo>-1 ? cellText(c[iInfo]).toString().trim() : '',
+        };
+      });
+  }
+
+  async function fetchDocsTab(tabName){
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID_DOCS}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}&_=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status + ' na planilha de documentação (' + tabName + ')');
+    const text = await res.text();
+    const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    const data = JSON.parse(jsonStr);
+    if(!data.table || !data.table.rows) throw new Error('Formato inesperado na planilha de documentação (' + tabName + ')');
+    return parseDocsTabRows(data);
+  }
+
+  async function fetchDocs(){
+    // busca por todas as filiais conhecidas; abas que não existirem nessa planilha
+    // (ainda) simplesmente falham individualmente e são ignoradas
+    const results = await Promise.allSettled(SHEET_TABS.map(fetchDocsTab));
+    let merged = [];
+    results.forEach(r => { if(r.status === 'fulfilled') merged = merged.concat(r.value); });
+    return merged;
+  }
+
+  // vincula os dados de documentação a cada condutor pelo nome normalizado
+  function attachDocs(condutorRows, docsRows){
+    const byName = {};
+    docsRows.forEach(d => {
+      const key = normalizeName(d.motorista);
+      if(key) byName[key] = d; // se houver duplicata, fica o último encontrado
+    });
+    condutorRows.forEach(r => {
+      const d = byName[normalizeName(r.motorista)];
+      if(d){
+        r.docPendencias = d.pendencias;
+        r.docInformacao = d.informacao;
+        // "aguardando DER" agora é definido pela coluna DER da planilha de documentação:
+        // diferente de OK = ainda aguardando o retorno do cadastro
+        r.enviado = !d.derOk;
+      } else {
+        r.docPendencias = [];
+        r.docInformacao = '';
+        r.enviado = false;
+      }
+    });
+  }
+
   async function fetchTab(tabName){
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}&_=${Date.now()}`;
     const res = await fetch(url);
@@ -943,6 +1048,14 @@
         rawMultas = [];
       }
       attachMultas(merged, rawMultas);
+
+      // planilha de Controle de Documentação: busca separada, não deve travar o painel se falhar
+      try{
+        const docsRows = await fetchDocs();
+        attachDocs(merged, docsRows);
+      }catch(errDocs){
+        console.warn('Não foi possível carregar a planilha de Controle de Documentação:', errDocs);
+      }
 
       rawRows = merged;
       els.empty.classList.add('hidden');
@@ -1216,8 +1329,31 @@
     } else {
       obsSection.classList.add('hidden');
     }
+    renderDocsPendModal(r);
     renderMultasModal(r);
     els.modalBackdrop.classList.add('open');
+  }
+
+  function renderDocsPendModal(r){
+    const pendSection = document.getElementById('mdDocsPendSection');
+    const pendList = document.getElementById('mdDocsPendList');
+    const pendencias = r.docPendencias || [];
+    if(pendencias.length){
+      pendSection.classList.remove('hidden');
+      pendList.innerHTML = pendencias.map(p => `<span class="docpend-tag">${escapeHtml(p)}</span>`).join('');
+    } else {
+      pendSection.classList.add('hidden');
+      pendList.innerHTML = '';
+    }
+
+    const infoSection = document.getElementById('mdInfoSection');
+    const info = (r.docInformacao || '').trim();
+    if(info){
+      infoSection.classList.remove('hidden');
+      document.getElementById('mdInfo').textContent = info;
+    } else {
+      infoSection.classList.add('hidden');
+    }
   }
 
   function renderMultasModal(r){
