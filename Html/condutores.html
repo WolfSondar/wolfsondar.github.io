@@ -515,6 +515,10 @@
         <div class="modal-section-title has-docs">Documento pendente</div>
         <div id="mdDocsList" class="doc-tags"></div>
       </div>
+      <div id="mdDocsInfoSection" class="hidden">
+        <div class="modal-section-title has-docs">Observação</div>
+        <div class="modal-note" id="mdDocsInfo">—</div>
+      </div>
       <div id="mdMultasSection" class="hidden">
         <div class="modal-section-title" id="mdMultasTitle">Multas</div>
         <div id="mdMultasList"></div>
@@ -929,6 +933,7 @@
     const iMotorista = idx('MOTORISTA');
     if(iMotorista === -1) return [];
     const colIdx = DOC_COLUMNS.map(dc => idx(dc.header));
+    const iInfo = idx('INFORMAÇÃO');
 
     return data.table.rows
       .map(r => r.c)
@@ -943,7 +948,13 @@
           // (VENCIDO, FALTA, ERRO etc.), célula vazia não conta como pendência
           if(val && val.toUpperCase() !== 'OK') pendentes.push(dc.tag);
         });
-        return { motorista: cellText(c[iMotorista]), pendentes };
+        // coluna INFORMAÇÃO (K): observação livre — ignora quando vazia ou "TUDO OK"
+        let observacao = '';
+        if(iInfo > -1){
+          const infoVal = cellText(c[iInfo]).trim();
+          if(infoVal && infoVal.toUpperCase() !== 'TUDO OK') observacao = infoVal;
+        }
+        return { motorista: cellText(c[iMotorista]), pendentes, observacao };
       });
   }
 
@@ -972,10 +983,12 @@
     const byName = {};
     docsRows.forEach(d => {
       const key = normalizeName(d.motorista);
-      if(key) byName[key] = d.pendentes;
+      if(key) byName[key] = d;
     });
     condutorRows.forEach(r => {
-      r.docsPendentes = byName[normalizeName(r.motorista)] || [];
+      const found = byName[normalizeName(r.motorista)];
+      r.docsPendentes = found ? found.pendentes : [];
+      r.docsObservacao = found ? found.observacao : '';
     });
   }
 
@@ -1234,7 +1247,9 @@
 
     if(updateCharts){
       const mode = fDer ? 'der' : (fCnh ? 'cnh' : (cadastroFilterStatus ? 'cadastro' : 'total'));
-      renderCharts(chartRows.length ? chartRows : rawRows, statsBase, mode, fMultas);
+      // usa sempre o mesmo conjunto filtrado da tabela — nunca cai pra base inteira quando
+      // o resultado é vazio, senão o gráfico mistura filiais/filtros que não foram selecionados
+      renderCharts(chartRows, statsBase, mode, fMultas);
     }
   }
 
@@ -1317,10 +1332,20 @@
     if(!pendentes.length){
       section.classList.add('hidden');
       list.innerHTML = '';
-      return;
+    } else {
+      section.classList.remove('hidden');
+      list.innerHTML = pendentes.map(tag => `<span class="badge-doc">${escapeHtml(tag)}</span>`).join('');
     }
-    section.classList.remove('hidden');
-    list.innerHTML = pendentes.map(tag => `<span class="badge-doc">${escapeHtml(tag)}</span>`).join('');
+
+    const infoSection = document.getElementById('mdDocsInfoSection');
+    const infoEl = document.getElementById('mdDocsInfo');
+    const observacao = (r.docsObservacao || '').trim();
+    if(observacao){
+      infoSection.classList.remove('hidden');
+      infoEl.textContent = observacao;
+    } else {
+      infoSection.classList.add('hidden');
+    }
   }
 
   function renderMultasModal(r){
@@ -1391,16 +1416,24 @@
   }
 
   function renderCharts(filialRows, statusRows, mode, isMultas){
-    // por filial (quando o card "Multas" está ativo, mostra só quem tem multa pendente, por filial)
-    const byFilial = {};
-    filialRows.forEach(r=>{ byFilial[r.filial] = (byFilial[r.filial]||0)+1; });
-    const filiais = Object.keys(byFilial).sort((a,b)=>byFilial[b]-byFilial[a]);
-    const filialVals = filiais.map(f=>byFilial[f]);
     document.getElementById('chartFilialSub').textContent = isMultas
       ? 'Motoristas com multas pendentes, por filial'
       : 'Distribuição do quadro ativo em cada unidade';
 
     if(charts.filial) charts.filial.destroy();
+
+    if(!filialRows.length){
+      // nenhum motorista bate com os filtros atuais — não tem o que desenhar
+      document.getElementById('chartFilial').getContext('2d').clearRect(0,0,9999,9999);
+      charts.filial = null;
+      document.getElementById('chartFilialSub').textContent = 'Nenhum resultado para os filtros atuais';
+    } else {
+    // por filial (quando o card "Multas" está ativo, mostra só quem tem multa pendente, por filial)
+    const byFilial = {};
+    filialRows.forEach(r=>{ byFilial[r.filial] = (byFilial[r.filial]||0)+1; });
+    const filiais = Object.keys(byFilial).sort((a,b)=>byFilial[b]-byFilial[a]);
+    const filialVals = filiais.map(f=>byFilial[f]);
+
     charts.filial = new Chart(document.getElementById('chartFilial'), {
       type:'bar',
       data:{ labels: filiais, datasets:[{ data: filialVals, backgroundColor: isMultas ? '#e5484d' : '#1e4278', borderRadius:6, maxBarThickness:34 }]},
@@ -1423,6 +1456,7 @@
         }
       }
     });
+    }
 
     // situação documental — inteligente conforme o card/filtro ativo
     // paleta: DER (mais importante) usa cores fortes e saturadas — verde/laranja/vermelho vivos.
