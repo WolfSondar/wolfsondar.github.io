@@ -1117,7 +1117,7 @@
     let rows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(!((r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus === 'SEM_CADASTRO')) return false;
       } else if(cadastroFilterStatus === 'AGUARDANDO'){
         if(!isEnviadoAguardando(r)) return false;
       } else {
@@ -1133,7 +1133,7 @@
     let chartRows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(!((r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus === 'SEM_CADASTRO')) return false;
       } else if(cadastroFilterStatus === 'AGUARDANDO'){
         if(!isEnviadoAguardando(r)) return false;
       } else {
@@ -1165,7 +1165,7 @@
     const derVencido = statsBase.filter(r=>r.derStatus==='VENCIDO').length;
     const cnhAtivo = statsBase.filter(r=>r.cnhStatus==='ATIVO').length;
     const cnhVencido = statsBase.filter(r=>r.cnhStatus==='VENCIDO').length;
-    const semCadastro = statsBase.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length;
+    const semCadastro = statsBase.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length;
     const enviados = statsBase.filter(isEnviadoAguardando).length;
     const comMultas = statsBase.filter(r=>r.multasPendentes > 0).length;
 
@@ -1493,7 +1493,7 @@
     } else if(mode === 'cadastro'){
       labels = ['Sem cadastro','Aguardando DER'];
       data = [
-        statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length,
+        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length,
         statusRows.filter(isEnviadoAguardando).length
       ];
       colors = [COL.semCadastro, COL.aguardando];
@@ -1507,7 +1507,7 @@
         statusRows.filter(r=>r.derStatus==='VENCIDO').length,
         statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length,
-        statusRows.filter(r=>r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO').length
+        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length
       ];
       colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.cnhAtiva, COL.cnhVencida, COL.semCadastro];
       targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'}];
