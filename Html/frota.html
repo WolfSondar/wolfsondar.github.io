@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Frota</title>
+<title>Painel de ATF's</title>
 <link rel="icon" type="image/jpeg" href="Img/favicon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
   .dot.off{background:var(--slate-400);box-shadow:none;}
   .dot.err{background:var(--red);box-shadow:0 0 0 4px rgba(229,72,77,.2);}
 
-  #filterUnidade, #filterTipo, #filterStatus{
+  #filterUnidade, #filterStatus, #filterCliente{
     background:var(--navy-800);
     color:#fff;
     border:1.5px solid rgba(255,255,255,.3);
@@ -72,8 +72,8 @@
     font-family:var(--font-body);
     cursor:pointer;
   }
-  #filterUnidade:hover, #filterTipo:hover, #filterStatus:hover{border-color:rgba(255,255,255,.55);}
-  #filterUnidade option, #filterTipo option, #filterStatus option{
+  #filterUnidade:hover, #filterStatus:hover, #filterCliente:hover{border-color:rgba(255,255,255,.55);}
+  #filterUnidade option, #filterStatus option, #filterCliente option{
     background:#ffffff;
     color:var(--slate-900);
   }
@@ -89,12 +89,12 @@
     animation:shimmer 1.4s linear infinite;
     border-radius:8px;
   }
-  .skel-stats{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;margin-bottom:26px;}
+  .skel-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px;}
   .skel-stat{height:92px;border-radius:var(--radius);}
   .skel-panels{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:26px;}
   .skel-panel{height:260px;border-radius:var(--radius);}
   .skel-row{height:42px;border-radius:8px;margin-bottom:8px;}
-  @media (max-width:1100px){ .skel-stats{grid-template-columns:repeat(3,1fr);} .skel-panels{grid-template-columns:1fr;} }
+  @media (max-width:1100px){ .skel-stats{grid-template-columns:repeat(2,1fr);} .skel-panels{grid-template-columns:1fr;} }
 
   /* ---------- layout geral ---------- */
   main{max-width:1320px;margin:0 auto;padding:28px 40px 60px;}
@@ -105,7 +105,7 @@
   .hidden{display:none !important;}
 
   /* ---------- cards de estatística ---------- */
-  .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
   .stat{
     background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;
     border:1px solid var(--line);position:relative;overflow:hidden;
@@ -122,10 +122,7 @@
   .stat.red .bar i{background:var(--red);}
   .stat.amber .v{color:#c07f16;}
   .stat.amber .bar i{background:var(--amber);}
-  .stat.gray .v{color:var(--slate-600);}
-  .stat.gray .bar i{background:var(--slate-400);}
-  .stat.blue .v{color:var(--navy-700);}
-  .stat.blue .bar i{background:var(--navy-700);}
+  
   .stat{cursor:pointer;transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;}
   .stat:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(15,37,68,.1);}
   .stat.active{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(30,66,120,.14);}
@@ -223,18 +220,17 @@
     .mobile-cards{display:flex;}
   }
 
-  /* ---------- copiar no modal ---------- */
+  /* ---------- modal de detalhes ---------- */
   .val.copyable{cursor:pointer;border-bottom:1.5px dashed var(--slate-400);}
   .val.copyable:hover{color:var(--navy-700);border-color:var(--navy-700);}
 
-  /* ---------- modal de detalhes do veículo ---------- */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(10,25,48,.55);display:none;
     align-items:center;justify-content:center;z-index:50;padding:20px;
   }
   .modal-backdrop.open{display:flex;}
   .modal-card{
-    background:#fff;border-radius:var(--radius);max-width:720px;width:100%;
+    background:#fff;border-radius:var(--radius);max-width:600px;width:100%;
     max-height:92vh;overflow:hidden;box-shadow:0 24px 60px rgba(10,25,48,.35);
     display:flex;flex-direction:column;
   }
@@ -250,30 +246,22 @@
     border-radius:50%;font-size:14px;cursor:pointer;flex:none;
   }
   .modal-close:hover{background:rgba(255,255,255,.24);}
-  .modal-body{padding:16px 22px 20px;overflow-y:auto;}
-  .modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;}
+  .modal-body{padding:20px 22px;overflow-y:auto;}
+  .modal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 16px;}
   .modal-field{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .modal-field .lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--slate-600);}
-  .modal-field .val{font-size:12.5px;color:var(--slate-900);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .modal-section-title{
-    font-family:var(--font-display);font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--navy-800);
-    margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--line);
-  }
-  .modal-note{background:var(--bg);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--slate-900);line-height:1.45;margin-top:8px;max-height:80px;overflow-y:auto;}
-  @media (max-width:600px){ .modal-grid{grid-template-columns:1fr 1fr;} }
+  .modal-field .val{font-size:13px;color:var(--slate-900);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  
+  @media (max-width:600px){ .modal-grid{grid-template-columns:1fr;} }
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
   @media (max-width:1100px){
-    .stats{grid-template-columns:repeat(4,1fr);}
+    .stats{grid-template-columns:repeat(2,1fr);}
     .panels{grid-template-columns:1fr;}
   }
   @media (max-width:700px){
-    .stats{grid-template-columns:repeat(2,1fr);}
     .road{padding:26px 20px 26px;}
     main{padding:22px 16px 50px;}
-  }
-  @media (prefers-reduced-motion: reduce){
-    *{transition:none !important;}
   }
 </style>
 </head>
@@ -282,8 +270,8 @@
 <header class="road">
   <div class="road-top">
     <div class="road-title">
-      <span class="eyebrow">Viação · Gestão de Frota</span>
-      <h1>Painel de Frota</h1>
+      <span class="eyebrow">Viação · Gestão de ATF's</span>
+      <h1>Painel de ATF's</h1>
     </div>
     <div class="road-status">
       <span class="dot off" id="statusDot"></span>
@@ -291,8 +279,8 @@
       <select id="filterUnidade">
         <option value="">Todas as unidades</option>
       </select>
-      <select id="filterTipo">
-        <option value="">Todos os tipos</option>
+      <select id="filterCliente">
+        <option value="">Todos os clientes</option>
       </select>
       <button class="btn btn-ghost" id="btnRefresh" style="border-color:rgba(255,255,255,.25);color:#fff;">Atualizar agora</button>
     </div>
@@ -302,8 +290,7 @@
 <main>
   <div id="emptyState" class="state-msg" style="text-align:left;padding:28px 0;">
     <div class="skel-stats">
-      <div class="skel skel-stat"></div><div class="skel skel-stat"></div><div class="skel skel-stat"></div>
-      <div class="skel skel-stat"></div><div class="skel skel-stat"></div><div class="skel skel-stat"></div>
+      <div class="skel skel-stat"></div><div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div><div class="skel skel-stat"></div>
     </div>
     <div class="skel-panels">
@@ -313,56 +300,35 @@
     <div class="skel skel-row" style="width:100%;height:44px;"></div>
     <div class="skel skel-row" style="width:100%;"></div>
     <div class="skel skel-row" style="width:100%;"></div>
-    <div class="skel skel-row" style="width:100%;"></div>
     <div class="skel skel-row" style="width:70%;"></div>
   </div>
 
   <div id="errorState" class="state-msg hidden">
     <strong>Não foi possível ler a planilha</strong>
-    <span id="errorDetail">Verifique se o link de compartilhamento está liberado e se o nome da aba está correto.</span>
+    <span id="errorDetail">Verifique se o link de compartilhamento está liberado e se a aba chama-se "ATF's".</span>
   </div>
 
   <div id="dashboard" class="hidden">
     <section class="stats" id="statsSection">
       <div class="stat total" data-flag="">
-        <div class="k">Total de veículos</div>
+        <div class="k">Total de ATF's</div>
         <div class="v" id="stTotal">0</div>
         <div class="bar"><i></i></div>
       </div>
-      <div class="stat red" data-flag="rastreador">
-        <div class="k">Rastreador c/ problema</div>
-        <div class="v" id="stRastreador">0</div>
-        <div class="bar"><i id="barRastreador" style="width:0%"></i></div>
+      <div class="stat red" data-flag="vencido">
+        <div class="k">Vencidos</div>
+        <div class="v" id="stVencidos">0</div>
+        <div class="bar"><i id="barVencidos" style="width:0%"></i></div>
       </div>
-      <div class="stat amber" data-flag="crlv">
-        <div class="k">CRLV pendente</div>
-        <div class="v" id="stCrlv">0</div>
-        <div class="bar"><i id="barCrlv" style="width:0%"></i></div>
+      <div class="stat amber" data-flag="vencendo">
+        <div class="k">Vencendo (Próx. 15 dias)</div>
+        <div class="v" id="stVencendo">0</div>
+        <div class="bar"><i id="barVencendo" style="width:0%"></i></div>
       </div>
-      <div class="stat red" data-flag="despoluirVencido">
-        <div class="k">Despoluição vencida</div>
-        <div class="v" id="stDespVencido">0</div>
-        <div class="bar"><i id="barDespVencido" style="width:0%"></i></div>
-      </div>
-      <div class="stat amber" data-flag="despoluirVencendo">
-        <div class="k">Despoluição vencendo/s. laudo</div>
-        <div class="v" id="stDespVencendo">0</div>
-        <div class="bar"><i id="barDespVencendo" style="width:0%"></i></div>
-      </div>
-      <div class="stat red" data-flag="tacografo">
-        <div class="k">Tacógrafo irregular</div>
-        <div class="v" id="stTacografo">0</div>
-        <div class="bar"><i id="barTacografo" style="width:0%"></i></div>
-      </div>
-      <div class="stat gray" data-flag="seguro">
-        <div class="k">Seguro sem registro</div>
-        <div class="v" id="stSeguro">0</div>
-        <div class="bar"><i id="barSeguro" style="width:0%"></i></div>
-      </div>
-      <div class="stat red" data-flag="deer">
-        <div class="k">DEER vencido</div>
-        <div class="v" id="stDeer">0</div>
-        <div class="bar"><i id="barDeer" style="width:0%"></i></div>
+      <div class="stat green" data-flag="regular">
+        <div class="k">Regulares</div>
+        <div class="v" id="stRegular">0</div>
+        <div class="bar"><i id="barRegular" style="width:0%"></i></div>
       </div>
     </section>
 
@@ -370,34 +336,30 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h3>Veículos por unidade</h3>
-            <p class="sub">Distribuição da frota em cada unidade</p>
+            <h3>ATF's por Unidade</h3>
+            <p class="sub">Distribuição dos documentos por base</p>
           </div>
-          <button type="button" class="btn-chip hidden" id="btnAllUnidades">Ver todas as unidades</button>
+          <button type="button" class="btn-chip hidden" id="btnAllUnidades">Ver todas</button>
         </div>
         <canvas id="chartUnidade"></canvas>
       </div>
       <div class="panel">
-        <h3>Situação da frota</h3>
-        <p class="sub">Pendências por categoria de documento</p>
+        <h3>Situação dos ATF's</h3>
+        <p class="sub">Visão geral do status de validade</p>
         <canvas id="chartStatus"></canvas>
       </div>
     </section>
 
     <div class="toolbar">
       <div class="search-wrap">
-        <input type="text" id="search" placeholder="Buscar por prefixo, placa, chassi ou renavam…">
+        <input type="text" id="search" placeholder="Buscar por frota, placa, cliente, origem ou destino…">
         <button type="button" class="search-clear" id="searchClear">×</button>
       </div>
       <select id="filterStatus">
         <option value="">Status — todos</option>
-        <option value="rastreador">Rastreador c/ problema</option>
-        <option value="crlv">CRLV pendente</option>
-        <option value="despoluirVencido">Despoluição vencida</option>
-        <option value="despoluirVencendo">Despoluição vencendo/s. laudo</option>
-        <option value="tacografo">Tacógrafo irregular</option>
-        <option value="seguro">Seguro sem registro</option>
-        <option value="deer">DEER vencido</option>
+        <option value="vencido">Vencido</option>
+        <option value="vencendo">Vencendo</option>
+        <option value="regular">Regular</option>
       </select>
       <span class="count-pill" id="countPill">0 registros</span>
     </div>
@@ -406,21 +368,20 @@
       <table>
         <thead>
           <tr>
-            <th data-key="pref">Prefixo <span class="arrow"></span></th>
-            <th data-key="tipo">Tipo <span class="arrow"></span></th>
-            <th data-key="unidade">Unidade <span class="arrow"></span></th>
+            <th data-key="frota">Frota <span class="arrow"></span></th>
             <th data-key="placa">Placa <span class="arrow"></span></th>
-            <th>Rastreador</th>
-            <th>CRLV 26</th>
-            <th>Despoluição</th>
-            <th>Tacógrafo</th>
-            <th>Seguro</th>
-            <th>DEER</th>
+            <th data-key="unidade">Unidade <span class="arrow"></span></th>
+            <th data-key="cliente">Cliente <span class="arrow"></span></th>
+            <th data-key="origemDestino">Origem x Destino <span class="arrow"></span></th>
+            <th data-key="dataEmissao">Data Emissão <span class="arrow"></span></th>
+            <th data-key="periodoValidade">Validade <span class="arrow"></span></th>
+            <th data-key="dias">Dias <span class="arrow"></span></th>
+            <th data-key="status">Status <span class="arrow"></span></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
         <tfoot>
-          <tr><td colspan="10" id="tfootMsg"></td></tr>
+          <tr><td colspan="9" id="tfootMsg"></td></tr>
         </tfoot>
       </table>
     </div>
@@ -439,7 +400,7 @@
   <div class="modal-card">
     <div class="modal-head">
       <div>
-        <h2 id="mdPref">—</h2>
+        <h2 id="mdFrota">—</h2>
         <p id="mdSub">—</p>
       </div>
       <div class="modal-head-right">
@@ -448,42 +409,25 @@
     </div>
     <div class="modal-body">
       <div class="modal-grid">
-        <div class="modal-field"><span class="lbl">Placa</span><span class="val copyable" id="mdPlaca">—</span></div>
-        <div class="modal-field"><span class="lbl">Chassi</span><span class="val copyable" id="mdChassi">—</span></div>
-        <div class="modal-field"><span class="lbl">Renavam</span><span class="val copyable" id="mdRenavam">—</span></div>
-        <div class="modal-field"><span class="lbl">Marca / Modelo</span><span class="val" id="mdMarcaModelo">—</span></div>
-        <div class="modal-field"><span class="lbl">Carroceria</span><span class="val" id="mdCarroceria">—</span></div>
-        <div class="modal-field"><span class="lbl">Ano / Modelo</span><span class="val" id="mdAnoModelo">—</span></div>
-        <div class="modal-field"><span class="lbl">CNPJ</span><span class="val" id="mdCnpj">—</span></div>
-        <div class="modal-field"><span class="lbl">Compra</span><span class="val" id="mdCompra">—</span></div>
-        <div class="modal-field"><span class="lbl">Idade</span><span class="val" id="mdIdade">—</span></div>
-
-        <div class="modal-field"><span class="lbl">ID rastreador</span><span class="val" id="mdIdRastreador">—</span></div>
-        <div class="modal-field"><span class="lbl">Status rastreador</span><span class="val" id="mdStatusRastreador">—</span></div>
-        <div class="modal-field"><span class="lbl">CRLV 26 / 25</span><span class="val" id="mdCrlv">—</span></div>
-
-        <div class="modal-field"><span class="lbl">Despoluição venc.</span><span class="val" id="mdDespVenc">—</span></div>
-        <div class="modal-field"><span class="lbl">Status despoluição</span><span class="val" id="mdDespStatus">—</span></div>
-        <div class="modal-field"><span class="lbl">Tacógrafo venc.</span><span class="val" id="mdTacoVenc">—</span></div>
-        <div class="modal-field"><span class="lbl">Status tacógrafo</span><span class="val" id="mdTacoStatus">—</span></div>
-        <div class="modal-field"><span class="lbl">Nº apólice seguro</span><span class="val" id="mdApolice">—</span></div>
-        <div class="modal-field"><span class="lbl">Seguro até</span><span class="val" id="mdSeguroAte">—</span></div>
-        <div class="modal-field"><span class="lbl">DEER vencimento</span><span class="val" id="mdDeerVenc">—</span></div>
-        <div class="modal-field"><span class="lbl">Status DEER</span><span class="val" id="mdDeerStatus">—</span></div>
+        <div class="modal-field"><span class="lbl">Frota</span><span class="val copyable" id="mdFieldFrota">—</span></div>
+        <div class="modal-field"><span class="lbl">Placa</span><span class="val copyable" id="mdFieldPlaca">—</span></div>
+        <div class="modal-field"><span class="lbl">Unidade</span><span class="val" id="mdFieldUnidade">—</span></div>
+        <div class="modal-field"><span class="lbl">Cliente</span><span class="val" id="mdFieldCliente">—</span></div>
+        <div class="modal-field"><span class="lbl">Origem x Destino</span><span class="val" id="mdFieldOrigem">—</span></div>
+        <div class="modal-field"><span class="lbl">Data Emissão</span><span class="val" id="mdFieldEmissao">—</span></div>
+        <div class="modal-field"><span class="lbl">Período Validade</span><span class="val" id="mdFieldValidade">—</span></div>
+        <div class="modal-field"><span class="lbl">Dias Restantes</span><span class="val" id="mdFieldDias">—</span></div>
+        <div class="modal-field" style="grid-column: span 2;"><span class="lbl">Status</span><span class="val" id="mdFieldStatus">—</span></div>
       </div>
-      <div class="modal-section-title">Observação</div>
-      <div class="modal-note" id="mdObs">—</div>
     </div>
   </div>
 </div>
 
 <script>
 (function(){
-  // Planilha fixa — RELAÇÃO DE FROTA VMG 2026, aba "Frota"
-  // Cabeçalho real está na linha 3 da planilha (linhas 1-2 ficam em branco),
-  // por isso pedimos ao gviz o intervalo a partir de A3 com headers=1.
+  // Link da planilha mantido conforme solicitação
   const SHEET_ID = '1Ifls95c7CWJujD16v-1Iq5y3lJtH7gC6o3JQmbM1TB4';
-  const SHEET_TAB = 'Frota';
+  const SHEET_TAB = "ATF's";
 
   const els = {
     btnRefresh: document.getElementById('btnRefresh'),
@@ -495,7 +439,7 @@
     dash: document.getElementById('dashboard'),
     search: document.getElementById('search'),
     filterUnidade: document.getElementById('filterUnidade'),
-    filterTipo: document.getElementById('filterTipo'),
+    filterCliente: document.getElementById('filterCliente'),
     filterStatus: document.getElementById('filterStatus'),
     tbody: document.getElementById('tbody'),
     mobileCards: document.getElementById('mobileCards'),
@@ -512,35 +456,12 @@
 
   let rawRows = [];
   let currentPageRows = [];
-  let sortState = {key:'pref', dir:1};
+  let sortState = {key:'frota', dir:1};
   let charts = {unidade:null, status:null};
   let refreshTimer = null;
   const PAGE_SIZE = 100;
   let currentPage = 1;
-  let activeFlag = ''; // '' | 'rastreador' | 'crlv' | 'despoluirVencido' | 'despoluirVencendo' | 'tacografo' | 'seguro' | 'deer'
-
-  const FLAG_FIELD = {
-    rastreador: 'flagRastreadorProblema',
-    crlv: 'flagCrlvPendente',
-    despoluirVencido: 'flagDespoluirVencido',
-    despoluirVencendo: 'flagDespoluirVencendo',
-    tacografo: 'flagTacografoIrregular',
-    seguro: 'flagSeguroSemRegistro',
-    deer: 'flagDeerVencido',
-  };
-  const FLAG_LABEL = {
-    rastreador: 'Rastreador c/ problema',
-    crlv: 'CRLV pendente',
-    despoluirVencido: 'Despoluição vencida',
-    despoluirVencendo: 'Despoluição vencendo/s. laudo',
-    tacografo: 'Tacógrafo irregular',
-    seguro: 'Seguro sem registro',
-    deer: 'DEER vencido',
-  };
-  const COL = {
-    rastreador:'#d21f2d', crlv:'#e2790a', despoluirVencido:'#d21f2d',
-    despoluirVencendo:'#e2790a', tacografo:'#c0392b', seguro:'#98a3b3', deer:'#9457d1',
-  };
+  let activeFlag = ''; // '' | 'vencido' | 'vencendo' | 'regular'
 
   els.btnRefresh.addEventListener('click', () => loadData());
   els.search.addEventListener('input', () => {
@@ -559,7 +480,7 @@
   els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeModal(); });
   els.filterUnidade.addEventListener('change', () => { currentPage = 1; render(true); });
-  els.filterTipo.addEventListener('change', () => { currentPage = 1; render(true); });
+  els.filterCliente.addEventListener('change', () => { currentPage = 1; render(true); });
   els.btnAllUnidades.addEventListener('click', () => {
     els.filterUnidade.value = '';
     currentPage = 1;
@@ -573,6 +494,7 @@
   });
   els.pgPrev.addEventListener('click', () => { if(currentPage > 1){ currentPage--; render(); } });
   els.pgNext.addEventListener('click', () => { currentPage++; render(); });
+  
   document.querySelectorAll('.stat[data-flag]').forEach(card => {
     card.addEventListener('click', () => {
       const flag = card.dataset.flag;
@@ -605,133 +527,76 @@
     els.statusText.textContent = text;
   }
 
-  function parseGvizDate(cell){
-    if(!cell) return null;
-    if(cell.v === null || cell.v === undefined || cell.v === '') return null;
-    if(typeof cell.v === 'string' && cell.v.startsWith('Date(')){
-      const parts = cell.v.replace('Date(','').replace(')','').split(',').map(Number);
-      const d = new Date(parts[0], parts[1], parts[2]);
-      if(parts[0] < 1950) return null;
-      return d;
-    }
-    return null;
-  }
-
   function cellText(cell){
     if(!cell) return '';
+    if(cell.v !== undefined && cell.v !== null && typeof cell.v === 'string' && cell.v.startsWith('Date(')){
+       const parts = cell.v.replace('Date(','').replace(')','').split(',').map(Number);
+       const d = new Date(parts[0], parts[1], parts[2]);
+       return d.toLocaleDateString('pt-BR');
+    }
     return (cell.f !== undefined && cell.f !== null) ? String(cell.f) : (cell.v ?? '');
   }
 
   function normText(s){ return (s||'').toString().trim().toUpperCase(); }
 
-  function daysUntil(date){
-    if(!date) return null;
-    const now = new Date();
-    now.setHours(0,0,0,0);
-    const d = new Date(date); d.setHours(0,0,0,0);
-    return Math.round((d - now) / 86400000);
+  // Função para inferir estado baseado em dias ou no texto do status
+  function getATFState(dias, statusText){
+    const txt = normText(statusText);
+    const numDias = parseInt(dias, 10);
+    
+    if(txt.includes('VENCID')) return 'vencido';
+    if(txt.includes('VENCENDO') || txt.includes('A VENCER')) return 'vencendo';
+    if(txt.includes('ATIVO') || txt.includes('OK') || txt.includes('REGULAR')) return 'regular';
+    
+    // Se o texto não for claro, avalia pelos dias
+    if(!isNaN(numDias)){
+        if(numDias < 0) return 'vencido';
+        if(numDias >= 0 && numDias <= 15) return 'vencendo';
+        return 'regular';
+    }
+    return 'regular'; // Padrão
   }
 
-  function sanitizeDays(v){
-    if(v === null || v === undefined || isNaN(v)) return null;
-    if(Math.abs(v) > 3650) return null;
-    return v;
-  }
-
-  function parseFrotaRows(data){
+  function parseATFRows(data){
     const cols = data.table.cols.map(c => (c.label || '').toString().trim().toUpperCase());
-    const idx = (name) => cols.findIndex(c => c === name);
+    
+    const idx = (name) => {
+        let i = cols.findIndex(c => c === name);
+        if(i === -1) i = cols.findIndex(c => c.includes(name));
+        return i;
+    };
 
-    const iNum = idx('Nº');
-    const iPref = idx('PREF.');
-    const iTipo = idx('TIPO');
-    const iIdRastreador = idx('ID RASTREADOR');
-    const iStatusRastreador = idx('STATUS RASTREADOR');
-    const iUnidade = idx('UNIDADE');
+    const iFrota = idx('FROTA');
     const iPlaca = idx('PLACA');
-    const iCnpj = idx('CNPJ');
-    const iAnoModelo = idx('ANO / MODELO');
-    const iChassi = idx('CHASSI');
-    const iRenavam = idx('RENAVAN');
-    const iMarca = idx('MARCA');
-    const iModeloChassi = idx('MODELO DE CHASSI');
-    const iModeloCarroceria = idx('MODELO DE CARROCERIA');
-    const iCompra = idx('COMPRA');
-    const iIdade = idx('IDADE');
-    const iCrlv26 = idx('CRLV 26');
-    const iCrlv25 = idx('CRLV 25');
-    const iDespVenc = idx('DESPOLUIR VENC.');
-    const iDespDias = idx('DIAS REST');
-    const iStatusDesp = idx('STATUS DESPOLUIR');
-    const iTacoVenc = idx('TACÓGRAFO VENC.');
-    const iTacoDias = idx('DIAS REST3');
-    const iStatusTaco = idx('STATUS TACÓGRAFO');
-    const iApolice = idx('Nº APÓLICE SEGURO');
-    const iSeguroAte = idx('SEGURO ATÉ');
-    const iSeguroDias = idx('DIAS REST2');
-    const iStatusSeguro = idx('STATUS SEGURO');
-    const iDeerVenc = idx('DEER VENCIMENTO');
-    const iDeerDias = idx('DIAS REST.');
-    const iStatusDeer = idx('STATUS DEER');
-    const iObs = idx('OBSERVAÇÃO');
+    const iUnidade = idx('UNIDADE');
+    const iEmissao = idx('EMISSÃO');
+    const iValidade = idx('VALIDADE');
+    const iDias = idx('DIAS');
+    const iStatus = idx('STATUS');
+    const iCliente = idx('CLIENTE');
+    const iOrigemDestino = idx('ORIGEM'); // Acha "ORIGEM x DESTINO"
 
     return data.table.rows
       .map(r => r.c)
-      .filter(c => c && iPlaca > -1 && cellText(c[iPlaca]))
+      .filter(c => c && (iFrota > -1 && cellText(c[iFrota])) || (iPlaca > -1 && cellText(c[iPlaca]))) // Precisa ter Frota ou Placa
       .map(c => {
-        const despVencDate = iDespVenc>-1 ? parseGvizDate(c[iDespVenc]) : null;
-        const tacoVencDate = iTacoVenc>-1 ? parseGvizDate(c[iTacoVenc]) : null;
-        const seguroAteDate = iSeguroAte>-1 ? parseGvizDate(c[iSeguroAte]) : null;
-        const deerVencDate = iDeerVenc>-1 ? parseGvizDate(c[iDeerVenc]) : null;
+        const frota = iFrota > -1 ? cellText(c[iFrota]) : '';
+        const placa = iPlaca > -1 ? cellText(c[iPlaca]) : '';
+        const unidade = iUnidade > -1 ? cellText(c[iUnidade]) : '';
+        const dataEmissao = iEmissao > -1 ? cellText(c[iEmissao]) : '';
+        const periodoValidade = iValidade > -1 ? cellText(c[iValidade]) : '';
+        const dias = iDias > -1 ? cellText(c[iDias]) : '';
+        const status = iStatus > -1 ? cellText(c[iStatus]) : '';
+        const cliente = iCliente > -1 ? cellText(c[iCliente]) : '';
+        const origemDestino = iOrigemDestino > -1 ? cellText(c[iOrigemDestino]) : '';
 
-        const statusRastreador = normText(iStatusRastreador>-1 ? cellText(c[iStatusRastreador]) : '');
-        const crlv26 = normText(iCrlv26>-1 ? cellText(c[iCrlv26]) : '');
-        const statusDesp = normText(iStatusDesp>-1 ? cellText(c[iStatusDesp]) : '');
-        const statusTaco = normText(iStatusTaco>-1 ? cellText(c[iStatusTaco]) : '');
-        const statusSeguro = normText(iStatusSeguro>-1 ? cellText(c[iStatusSeguro]) : '');
-        const statusDeer = normText(iStatusDeer>-1 ? cellText(c[iStatusDeer]) : '');
+        const situacao = getATFState(dias, status);
 
         return {
-          numero: iNum>-1 ? cellText(c[iNum]) : '',
-          pref: iPref>-1 ? cellText(c[iPref]) : '',
-          tipo: iTipo>-1 ? cellText(c[iTipo]) : '',
-          idRastreador: iIdRastreador>-1 ? cellText(c[iIdRastreador]) : '',
-          statusRastreador,
-          unidade: iUnidade>-1 ? cellText(c[iUnidade]) : '',
-          placa: iPlaca>-1 ? cellText(c[iPlaca]) : '',
-          cnpj: iCnpj>-1 ? cellText(c[iCnpj]) : '',
-          anoModelo: iAnoModelo>-1 ? cellText(c[iAnoModelo]) : '',
-          chassi: iChassi>-1 ? cellText(c[iChassi]) : '',
-          renavam: iRenavam>-1 ? cellText(c[iRenavam]) : '',
-          marca: iMarca>-1 ? cellText(c[iMarca]) : '',
-          modeloChassi: iModeloChassi>-1 ? cellText(c[iModeloChassi]) : '',
-          modeloCarroceria: iModeloCarroceria>-1 ? cellText(c[iModeloCarroceria]) : '',
-          compra: iCompra>-1 ? cellText(c[iCompra]) : '',
-          idade: iIdade>-1 ? cellText(c[iIdade]) : '',
-          crlv26,
-          crlv25: normText(iCrlv25>-1 ? cellText(c[iCrlv25]) : ''),
-          despVenc: despVencDate,
-          despDias: sanitizeDays(despVencDate ? daysUntil(despVencDate) : Number(iDespDias>-1 ? cellText(c[iDespDias]) : NaN)),
-          statusDesp,
-          tacoVenc: tacoVencDate,
-          tacoDias: sanitizeDays(tacoVencDate ? daysUntil(tacoVencDate) : Number(iTacoDias>-1 ? cellText(c[iTacoDias]) : NaN)),
-          statusTaco,
-          apolice: iApolice>-1 ? cellText(c[iApolice]) : '',
-          seguroAte: seguroAteDate,
-          seguroDias: sanitizeDays(seguroAteDate ? daysUntil(seguroAteDate) : Number(iSeguroDias>-1 ? cellText(c[iSeguroDias]) : NaN)),
-          statusSeguro,
-          deerVenc: deerVencDate,
-          deerDias: sanitizeDays(deerVencDate ? daysUntil(deerVencDate) : Number(iDeerDias>-1 ? cellText(c[iDeerDias]) : NaN)),
-          statusDeer,
-          observacao: iObs>-1 ? cellText(c[iObs]) : '',
-          // flags usados pelos cards, gráfico e filtro de status
-          flagRastreadorProblema: statusRastreador === 'INOPERANTE' || statusRastreador === 'SEM RASTREADOR',
-          flagCrlvPendente: crlv26 !== 'SIM',
-          flagDespoluirVencido: statusDesp === 'VENCIDO',
-          flagDespoluirVencendo: statusDesp === 'VENCENDO' || statusDesp === 'SEM LAUDO',
-          flagTacografoIrregular: statusTaco === 'VENCIDO' || statusTaco === 'VENCENDO',
-          flagSeguroSemRegistro: statusSeguro === '',
-          flagDeerVencido: statusDeer === 'VENCIDO',
+          frota, placa, unidade, dataEmissao, periodoValidade, dias, status, cliente, origemDestino, situacao,
+          flagVencido: situacao === 'vencido',
+          flagVencendo: situacao === 'vencendo',
+          flagRegular: situacao === 'regular'
         };
       });
   }
@@ -739,7 +604,7 @@
   async function loadData(){
     setStatus('off','Carregando…');
     try{
-      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_TAB)}&range=A3:AV100000&headers=1&_=${Date.now()}`;
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_TAB)}&range=A1:Z10000&headers=1&_=${Date.now()}`;
       const res = await fetch(url);
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
@@ -747,8 +612,8 @@
       const data = JSON.parse(jsonStr);
       if(!data.table || !data.table.rows) throw new Error('Formato inesperado recebido da planilha');
 
-      rawRows = parseFrotaRows(data);
-      if(rawRows.length === 0) throw new Error('Nenhum veículo encontrado (verifique se a coluna PLACA está preenchida)');
+      rawRows = parseATFRows(data);
+      if(rawRows.length === 0) throw new Error('Nenhum ATF encontrado na leitura.');
 
       els.empty.classList.add('hidden');
       els.error.classList.add('hidden');
@@ -767,7 +632,7 @@
       els.dash.classList.add('hidden');
       els.empty.classList.add('hidden');
       els.error.classList.remove('hidden');
-      els.errorDetail.textContent = 'Detalhe técnico: ' + err.message + '. Se você abriu este arquivo dando duplo clique nele (endereço começando com "file://"), o navegador bloqueia esse tipo de requisição por segurança — hospede o arquivo em um servidor (GitHub Pages, Netlify, ou o servidor da empresa). Confira também se a planilha está com o link liberado ("Qualquer pessoa com o link pode visualizar") e se o nome da aba é exatamente "Frota".';
+      els.errorDetail.textContent = 'Detalhe: ' + err.message + '. Confirme se a planilha compartilhada está liberada e se a aba realmente se chama "ATF\'s".';
       setStatus('err','Falha ao carregar');
     }
   }
@@ -779,56 +644,18 @@
       unidades.map(u=>`<option value="${u}">${u}</option>`).join('');
     if(unidades.includes(atualUnidade)) els.filterUnidade.value = atualUnidade;
 
-    const atualTipo = els.filterTipo.value;
-    const tipos = [...new Set(rawRows.map(r=>r.tipo).filter(Boolean))].sort();
-    els.filterTipo.innerHTML = '<option value="">Todos os tipos</option>' +
-      tipos.map(t=>`<option value="${t}">${t}</option>`).join('');
-    if(tipos.includes(atualTipo)) els.filterTipo.value = atualTipo;
+    const atualCliente = els.filterCliente.value;
+    const clientes = [...new Set(rawRows.map(r=>r.cliente).filter(Boolean))].sort();
+    els.filterCliente.innerHTML = '<option value="">Todos os clientes</option>' +
+      clientes.map(t=>`<option value="${t}">${t}</option>`).join('');
+    if(clientes.includes(atualCliente)) els.filterCliente.value = atualCliente;
   }
 
-  function fmtDate(d){
-    if(!d) return '—';
-    return d.toLocaleDateString('pt-BR');
-  }
-
-  function badge(label, kind){
-    const cls = kind === 'ok' ? 'ok' : kind === 'vencendo' ? 'vencendo' : kind === 'vencido' ? 'vencido' : 'outro';
-    return `<span class="badge ${cls}">${escapeHtml(label)}</span>`;
-  }
-
-  function badgeRastreador(r){
-    if(r.statusRastreador === 'FUNCIONANDO') return badge('Funcionando','ok');
-    if(r.statusRastreador === 'INOPERANTE') return badge('Inoperante','vencido');
-    if(r.statusRastreador === 'SEM RASTREADOR') return badge('Sem rastreador','outro');
-    return badge(r.statusRastreador || '—','outro');
-  }
-  function badgeCrlv(r){
-    return r.crlv26 === 'SIM' ? badge('OK','ok') : badge('Pendente','vencendo');
-  }
-  function badgeDesp(r){
-    if(r.statusDesp === 'ATIVO') return badge('Ativo','ok');
-    if(r.statusDesp === 'VENCENDO') return badge('Vencendo','vencendo');
-    if(r.statusDesp === 'VENCIDO') return badge('Vencido','vencido');
-    if(r.statusDesp === 'SEM LAUDO') return badge('Sem laudo','vencendo');
-    return badge('—','outro');
-  }
-  function badgeTaco(r){
-    if(r.statusTaco === 'ATIVO') return badge('Ativo','ok');
-    if(r.statusTaco === 'VENCENDO') return badge('Vencendo','vencendo');
-    if(r.statusTaco === 'VENCIDO') return badge('Vencido','vencido');
-    if(r.statusTaco === 'PRELIMINAR') return badge('Preliminar','outro');
-    return badge('—','outro');
-  }
-  function badgeSeguro(r){
-    if(r.statusSeguro === 'ATIVO') return badge('Ativo','ok');
-    if(r.statusSeguro === '') return badge('Sem registro','outro');
-    return badge(r.statusSeguro,'outro');
-  }
-  function badgeDeer(r){
-    if(r.statusDeer === 'ATIVO') return badge('Ativo','ok');
-    if(r.statusDeer === 'VENCIDO') return badge('Vencido','vencido');
-    if(r.statusDeer === 'IGNORAR') return badge('Ignorar','outro');
-    return badge('—','outro');
+  function badgeStatus(r){
+    if(r.situacao === 'regular') return `<span class="badge ok">${escapeHtml(r.status || 'OK')}</span>`;
+    if(r.situacao === 'vencendo') return `<span class="badge vencendo">${escapeHtml(r.status || 'Vencendo')}</span>`;
+    if(r.situacao === 'vencido') return `<span class="badge vencido">${escapeHtml(r.status || 'Vencido')}</span>`;
+    return `<span class="badge outro">${escapeHtml(r.status || '—')}</span>`;
   }
 
   function escapeHtml(s){
@@ -838,74 +665,73 @@
   function render(updateCharts){
     const q = els.search.value.trim().toLowerCase();
     const fUnidade = els.filterUnidade.value;
-    const fTipo = els.filterTipo.value;
+    const fCliente = els.filterCliente.value;
     els.btnAllUnidades.classList.toggle('hidden', !fUnidade);
 
     function matchesSearch(r){
       if(!q) return true;
-      if(r.pref && r.pref.toLowerCase().includes(q)) return true;
+      if(r.frota && r.frota.toLowerCase().includes(q)) return true;
       if(r.placa && r.placa.toLowerCase().includes(q)) return true;
-      if(r.chassi && r.chassi.toLowerCase().includes(q)) return true;
-      if(r.renavam && r.renavam.toLowerCase().includes(q)) return true;
+      if(r.cliente && r.cliente.toLowerCase().includes(q)) return true;
+      if(r.origemDestino && r.origemDestino.toLowerCase().includes(q)) return true;
       return false;
     }
+    
     function matchesFlag(r){
       if(!activeFlag) return true;
-      const field = FLAG_FIELD[activeFlag];
-      return field ? r[field] === true : true;
+      if(activeFlag === 'vencido') return r.flagVencido;
+      if(activeFlag === 'vencendo') return r.flagVencendo;
+      if(activeFlag === 'regular') return r.flagRegular;
+      return true;
     }
 
     let rows = rawRows.filter(r=>{
       if(fUnidade && r.unidade !== fUnidade) return false;
-      if(fTipo && r.tipo !== fTipo) return false;
+      if(fCliente && r.cliente !== fCliente) return false;
       if(!matchesFlag(r)) return false;
       if(!matchesSearch(r)) return false;
       return true;
     });
 
-    // linhas para os gráficos: mesmos filtros de unidade/tipo, sem a busca nem o filtro de status ativo
     let chartRows = rawRows.filter(r=>{
       if(fUnidade && r.unidade !== fUnidade) return false;
-      if(fTipo && r.tipo !== fTipo) return false;
+      if(fCliente && r.cliente !== fCliente) return false;
       return true;
     });
 
     rows.sort((a,b)=>{
       let va = a[sortState.key], vb = b[sortState.key];
-      if(va === null || va === undefined) va = '';
-      if(vb === null || vb === undefined) vb = '';
-      if(typeof va === 'string') va = va.toLowerCase();
-      if(typeof vb === 'string') vb = vb.toLowerCase();
+      // Tratamento especial para números na coluna de dias
+      if(sortState.key === 'dias'){
+          va = parseFloat(va) || 0;
+          vb = parseFloat(vb) || 0;
+      } else {
+          if(va === null || va === undefined) va = '';
+          if(vb === null || vb === undefined) vb = '';
+          if(typeof va === 'string') va = va.toLowerCase();
+          if(typeof vb === 'string') vb = vb.toLowerCase();
+      }
       if(va < vb) return -1*sortState.dir;
       if(va > vb) return 1*sortState.dir;
       return 0;
     });
+    
     updateSortIndicators();
 
-    // stats relativas à unidade/tipo selecionados (não ao filtro de status nem à busca)
     const statsBase = chartRows;
     const total = statsBase.length;
-    const counts = {};
-    Object.keys(FLAG_FIELD).forEach(k=>{
-      counts[k] = statsBase.filter(r=>r[FLAG_FIELD[k]]).length;
-    });
+    const cVencido = statsBase.filter(r=>r.flagVencido).length;
+    const cVencendo = statsBase.filter(r=>r.flagVencendo).length;
+    const cRegular = statsBase.filter(r=>r.flagRegular).length;
 
     document.getElementById('stTotal').textContent = total;
-    document.getElementById('stRastreador').textContent = counts.rastreador;
-    document.getElementById('stCrlv').textContent = counts.crlv;
-    document.getElementById('stDespVencido').textContent = counts.despoluirVencido;
-    document.getElementById('stDespVencendo').textContent = counts.despoluirVencendo;
-    document.getElementById('stTacografo').textContent = counts.tacografo;
-    document.getElementById('stSeguro').textContent = counts.seguro;
-    document.getElementById('stDeer').textContent = counts.deer;
+    document.getElementById('stVencidos').textContent = cVencido;
+    document.getElementById('stVencendo').textContent = cVencendo;
+    document.getElementById('stRegular').textContent = cRegular;
 
-    document.getElementById('barRastreador').style.width = total? (counts.rastreador/total*100)+'%':'0%';
-    document.getElementById('barCrlv').style.width = total? (counts.crlv/total*100)+'%':'0%';
-    document.getElementById('barDespVencido').style.width = total? (counts.despoluirVencido/total*100)+'%':'0%';
-    document.getElementById('barDespVencendo').style.width = total? (counts.despoluirVencendo/total*100)+'%':'0%';
-    document.getElementById('barTacografo').style.width = total? (counts.tacografo/total*100)+'%':'0%';
-    document.getElementById('barSeguro').style.width = total? (counts.seguro/total*100)+'%':'0%';
-    document.getElementById('barDeer').style.width = total? (counts.deer/total*100)+'%':'0%';
+    document.getElementById('barVencidos').style.width = total? (cVencido/total*100)+'%':'0%';
+    document.getElementById('barVencendo').style.width = total? (cVencendo/total*100)+'%':'0%';
+    document.getElementById('barRegular').style.width = total? (cRegular/total*100)+'%':'0%';
 
     els.countPill.textContent = `${rows.length} registro${rows.length===1?'':'s'} (de ${total})`;
 
@@ -921,16 +747,15 @@
 
     els.tbody.innerHTML = pageRows.map((r,i)=>{
       return `<tr data-i="${i}">
-        <td class="name">${escapeHtml(r.pref || '—')}</td>
-        <td>${escapeHtml(r.tipo)}</td>
-        <td>${escapeHtml(r.unidade)}</td>
+        <td class="name">${escapeHtml(r.frota || '—')}</td>
         <td>${escapeHtml(r.placa)}</td>
-        <td>${badgeRastreador(r)}</td>
-        <td>${badgeCrlv(r)}</td>
-        <td>${badgeDesp(r)}</td>
-        <td>${badgeTaco(r)}</td>
-        <td>${badgeSeguro(r)}</td>
-        <td>${badgeDeer(r)}</td>
+        <td>${escapeHtml(r.unidade)}</td>
+        <td>${escapeHtml(r.cliente)}</td>
+        <td>${escapeHtml(r.origemDestino)}</td>
+        <td>${escapeHtml(r.dataEmissao)}</td>
+        <td>${escapeHtml(r.periodoValidade)}</td>
+        <td>${escapeHtml(r.dias)}</td>
+        <td>${badgeStatus(r)}</td>
       </tr>`;
     }).join('');
 
@@ -941,12 +766,12 @@
     els.mobileCards.innerHTML = pageRows.map((r,i)=>{
       return `<div class="mcard" data-i="${i}">
         <div class="mcard-top">
-          <span class="mcard-name">${escapeHtml(r.pref || '—')}</span>
+          <span class="mcard-name">${escapeHtml(r.frota || '—')}</span>
           <span class="mcard-unidade">${escapeHtml(r.unidade)}</span>
         </div>
-        <div class="mcard-sub">${escapeHtml(r.tipo)} · ${escapeHtml(r.placa)}</div>
+        <div class="mcard-sub">${escapeHtml(r.placa)} · Cliente: ${escapeHtml(r.cliente || 'N/A')}</div>
         <div class="mcard-chips">
-          ${badgeRastreador(r)}${badgeCrlv(r)}${badgeDesp(r)}${badgeTaco(r)}${badgeSeguro(r)}${badgeDeer(r)}
+          ${badgeStatus(r)}
         </div>
       </div>`;
     }).join('');
@@ -955,10 +780,10 @@
       card.addEventListener('click', () => openModal(currentPageRows[Number(card.dataset.i)]));
     });
     if(rows.length===0){
-      els.mobileCards.innerHTML = '<div class="state-msg">Nenhum veículo encontrado com os filtros atuais.</div>';
+      els.mobileCards.innerHTML = '<div class="state-msg">Nenhum registro encontrado com os filtros atuais.</div>';
     }
 
-    els.tfootMsg.textContent = rows.length===0 ? 'Nenhum veículo encontrado com os filtros atuais.' : '';
+    els.tfootMsg.textContent = rows.length===0 ? 'Nenhum registro encontrado com os filtros atuais.' : '';
 
     if(updateCharts) renderCharts(chartRows, statsBase);
   }
@@ -989,40 +814,28 @@
 
   function openModal(r){
     if(!r) return;
-    document.getElementById('mdPref').textContent = r.pref ? ('Prefixo ' + r.pref) : '—';
-    document.getElementById('mdSub').textContent = [r.tipo, r.unidade].filter(Boolean).join(' · ') || '—';
+    document.getElementById('mdFrota').textContent = r.frota ? ('Frota ' + r.frota) : '—';
+    document.getElementById('mdSub').textContent = [r.placa, r.unidade].filter(Boolean).join(' · ') || '—';
 
-    const placaEl = document.getElementById('mdPlaca');
-    const chassiEl = document.getElementById('mdChassi');
-    const renavamEl = document.getElementById('mdRenavam');
+    const frotaEl = document.getElementById('mdFieldFrota');
+    const placaEl = document.getElementById('mdFieldPlaca');
+    
+    frotaEl.textContent = r.frota || '—';
     placaEl.textContent = r.placa || '—';
-    chassiEl.textContent = r.chassi || '—';
-    renavamEl.textContent = r.renavam || '—';
+    
+    frotaEl.onclick = () => copyToClipboard(r.frota, frotaEl);
     placaEl.onclick = () => copyToClipboard(r.placa, placaEl);
-    chassiEl.onclick = () => copyToClipboard(r.chassi, chassiEl);
-    renavamEl.onclick = () => copyToClipboard(r.renavam, renavamEl);
 
-    document.getElementById('mdMarcaModelo').textContent = [r.marca, r.modeloChassi].filter(Boolean).join(' ') || '—';
-    document.getElementById('mdCarroceria').textContent = r.modeloCarroceria || '—';
-    document.getElementById('mdAnoModelo').textContent = r.anoModelo || '—';
-    document.getElementById('mdCnpj').textContent = r.cnpj || '—';
-    document.getElementById('mdCompra').textContent = r.compra || '—';
-    document.getElementById('mdIdade').textContent = r.idade ? (r.idade + ' anos') : '—';
-
-    document.getElementById('mdIdRastreador').textContent = r.idRastreador || '—';
-    document.getElementById('mdStatusRastreador').textContent = r.statusRastreador || '—';
-    document.getElementById('mdCrlv').textContent = `26: ${r.crlv26 || '—'} · 25: ${r.crlv25 || '—'}`;
-
-    document.getElementById('mdDespVenc').textContent = fmtDate(r.despVenc);
-    document.getElementById('mdDespStatus').textContent = r.statusDesp || '—';
-    document.getElementById('mdTacoVenc').textContent = fmtDate(r.tacoVenc);
-    document.getElementById('mdTacoStatus').textContent = r.statusTaco || '—';
-    document.getElementById('mdApolice').textContent = r.apolice || '—';
-    document.getElementById('mdSeguroAte').textContent = fmtDate(r.seguroAte);
-    document.getElementById('mdDeerVenc').textContent = fmtDate(r.deerVenc);
-    document.getElementById('mdDeerStatus').textContent = r.statusDeer || '—';
-
-    document.getElementById('mdObs').textContent = r.observacao ? r.observacao : 'Nenhuma observação registrada.';
+    document.getElementById('mdFieldUnidade').textContent = r.unidade || '—';
+    document.getElementById('mdFieldCliente').textContent = r.cliente || '—';
+    document.getElementById('mdFieldOrigem').textContent = r.origemDestino || '—';
+    document.getElementById('mdFieldEmissao').textContent = r.dataEmissao || '—';
+    document.getElementById('mdFieldValidade').textContent = r.periodoValidade || '—';
+    document.getElementById('mdFieldDias').textContent = r.dias || '—';
+    
+    const mStatus = document.getElementById('mdFieldStatus');
+    mStatus.innerHTML = badgeStatus(r);
+    
     els.modalBackdrop.classList.add('open');
   }
 
@@ -1060,11 +873,15 @@
       }
     });
 
-    // situação da frota — uma fatia por categoria de pendência
-    const labels = Object.keys(FLAG_LABEL).map(k=>FLAG_LABEL[k]);
-    const data = Object.keys(FLAG_LABEL).map(k=>statsBase.filter(r=>r[FLAG_FIELD[k]]).length);
-    const colors = Object.keys(FLAG_LABEL).map(k=>COL[k]);
-    const keys = Object.keys(FLAG_LABEL);
+    // situação geral
+    const labels = ['Regulares', 'Vencendo', 'Vencidos'];
+    const cReg = statsBase.filter(r=>r.flagRegular).length;
+    const cVencendo = statsBase.filter(r=>r.flagVencendo).length;
+    const cVenc = statsBase.filter(r=>r.flagVencido).length;
+    
+    const data = [cReg, cVencendo, cVenc];
+    const colors = ['#2bad7d', '#f2a93b', '#e5484d'];
+    const keys = ['regular', 'vencendo', 'vencido'];
 
     if(charts.status) charts.status.destroy();
     charts.status = new Chart(document.getElementById('chartStatus'), {
