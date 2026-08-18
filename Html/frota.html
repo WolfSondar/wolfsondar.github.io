@@ -337,7 +337,7 @@
         <div class="panel-head">
           <div>
             <h3>ATF's por Unidade</h3>
-            <p class="sub">Distribuição dos documentos por base</p>
+            <p class="sub">Distribuição dos documentos filtrados</p>
           </div>
           <button type="button" class="btn-chip hidden" id="btnAllUnidades">Ver todas</button>
         </div>
@@ -454,8 +454,10 @@
   };
 
   let rawRows = [];
+  let allUnidades = [];
+  let allClientes = [];
   let currentPageRows = [];
-  let sortState = {key:'cliente', dir:1}; // Inicializa a ordenação pela coluna Cliente
+  let sortState = {key:'cliente', dir:1};
   let charts = {unidade:null, status:null};
   let refreshTimer = null;
   const PAGE_SIZE = 100;
@@ -478,8 +480,10 @@
   els.modalClose.addEventListener('click', closeModal);
   els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeModal(); });
+  
   els.filterUnidade.addEventListener('change', () => { currentPage = 1; render(true); });
   els.filterCliente.addEventListener('change', () => { currentPage = 1; render(true); });
+  
   els.btnAllUnidades.addEventListener('click', () => {
     els.filterUnidade.value = '';
     currentPage = 1;
@@ -573,7 +577,7 @@
     const iDias = idx('DIAS');
     const iStatus = idx('STATUS');
     const iCliente = idx('CLIENTE');
-    const iOrigemDestino = idx('ORIGEM'); // Acha "ORIGEM x DESTINO"
+    const iOrigemDestino = idx('ORIGEM');
 
     return data.table.rows
       .map(r => r.c)
@@ -588,17 +592,19 @@
         const cliente = iCliente > -1 ? cellText(c[iCliente]) : '';
         const origemDestino = iOrigemDestino > -1 ? cellText(c[iOrigemDestino]) : '';
         
-        let periodoValidade = iValidade > -1 ? cellText(c[iValidade]) : '';
+        let periodoValidadeFull = iValidade > -1 ? cellText(c[iValidade]) : '';
+        let periodoValidadeCurto = periodoValidadeFull;
         
-        // Remove a primeira data mantendo apenas o que vem após o " A "
-        if (periodoValidade.toUpperCase().includes(' A ')) {
-            periodoValidade = periodoValidade.toUpperCase().split(' A ').pop().trim();
+        // Expressão inteligente: separa o texto se encontrar " a ", " A ", " à " ou " À " envolto por espaços
+        const valParts = periodoValidadeFull.split(/\s+[aAàÀ]\s+/);
+        if(valParts.length > 1){
+            periodoValidadeCurto = valParts[valParts.length - 1].trim();
         }
 
         const situacao = getATFState(dias, status);
 
         return {
-          frota, placa, unidade, dataEmissao, periodoValidade, dias, status, cliente, origemDestino, situacao,
+          frota, placa, unidade, dataEmissao, periodoValidadeFull, periodoValidadeCurto, dias, status, cliente, origemDestino, situacao,
           flagVencido: situacao === 'vencido',
           flagVencendo: situacao === 'vencendo',
           flagRegular: situacao === 'regular'
@@ -619,6 +625,10 @@
 
       rawRows = parseATFRows(data);
       if(rawRows.length === 0) throw new Error('Nenhum ATF encontrado na leitura.');
+      
+      // Carrega as listas mestras de Unidades e Clientes
+      allUnidades = [...new Set(rawRows.map(r=>r.unidade).filter(Boolean))].sort();
+      allClientes = [...new Set(rawRows.map(r=>r.cliente).filter(Boolean))].sort();
 
       els.empty.classList.add('hidden');
       els.error.classList.add('hidden');
@@ -626,7 +636,6 @@
       const ts = new Date().toLocaleTimeString('pt-BR');
       setStatus('ok', `Conectado · ${ts}`);
 
-      buildFilterOptions();
       syncActiveCards();
       render(true);
 
@@ -642,18 +651,16 @@
     }
   }
 
-  function buildFilterOptions(){
-    const atualUnidade = els.filterUnidade.value;
-    const unidades = [...new Set(rawRows.map(r=>r.unidade).filter(Boolean))].sort();
-    els.filterUnidade.innerHTML = '<option value="">Todas as unidades</option>' +
-      unidades.map(u=>`<option value="${u}">${u}</option>`).join('');
-    if(unidades.includes(atualUnidade)) els.filterUnidade.value = atualUnidade;
+  // Atualiza as opções dinamicamente baseada nas seleções cruzadas
+  function updateDropdowns(currU, currC) {
+    const validU = new Set(rawRows.filter(r => !currC || r.cliente === currC).map(r => r.unidade).filter(Boolean));
+    const validC = new Set(rawRows.filter(r => !currU || r.unidade === currU).map(r => r.cliente).filter(Boolean));
 
-    const atualCliente = els.filterCliente.value;
-    const clientes = [...new Set(rawRows.map(r=>r.cliente).filter(Boolean))].sort();
+    els.filterUnidade.innerHTML = '<option value="">Todas as unidades</option>' +
+      allUnidades.filter(u => validU.has(u)).map(u => `<option value="${u}" ${u===currU?'selected':''}>${u}</option>`).join('');
+
     els.filterCliente.innerHTML = '<option value="">Todos os clientes</option>' +
-      clientes.map(t=>`<option value="${t}">${t}</option>`).join('');
-    if(clientes.includes(atualCliente)) els.filterCliente.value = atualCliente;
+      allClientes.filter(c => validC.has(c)).map(c => `<option value="${c}" ${c===currC?'selected':''}>${c}</option>`).join('');
   }
 
   function badgeStatus(r){
@@ -672,6 +679,9 @@
     const fUnidade = els.filterUnidade.value;
     const fCliente = els.filterCliente.value;
     els.btnAllUnidades.classList.toggle('hidden', !fUnidade);
+    
+    // Atualiza os dropdowns para refletirem a ligação entre Unidade e Cliente
+    updateDropdowns(fUnidade, fCliente);
 
     function matchesSearch(r){
       if(!q) return true;
@@ -690,6 +700,7 @@
       return true;
     }
 
+    // `rows` contém as linhas completamente filtradas (usadas na lista e no gráfico de Unidades)
     let rows = rawRows.filter(r=>{
       if(fUnidade && r.unidade !== fUnidade) return false;
       if(fCliente && r.cliente !== fCliente) return false;
@@ -698,9 +709,11 @@
       return true;
     });
 
-    let chartRows = rawRows.filter(r=>{
+    // `statsBase` não é afetado pelo clique nos cartões de status, mantendo as contagens numéricas coerentes e o gráfico de rosca completo
+    let statsBase = rawRows.filter(r=>{
       if(fUnidade && r.unidade !== fUnidade) return false;
       if(fCliente && r.cliente !== fCliente) return false;
+      if(!matchesSearch(r)) return false;
       return true;
     });
 
@@ -723,7 +736,6 @@
     
     updateSortIndicators();
 
-    const statsBase = chartRows;
     const total = statsBase.length;
     const cVencido = statsBase.filter(r=>r.flagVencido).length;
     const cVencendo = statsBase.filter(r=>r.flagVencendo).length;
@@ -757,7 +769,7 @@
         <td>${escapeHtml(r.placa)}</td>
         <td>${escapeHtml(r.unidade)}</td>
         <td>${escapeHtml(r.origemDestino)}</td>
-        <td>${escapeHtml(r.periodoValidade)}</td>
+        <td>${escapeHtml(r.periodoValidadeCurto)}</td> <!-- Usando formato curto -->
         <td>${escapeHtml(r.dias)}</td>
         <td>${badgeStatus(r)}</td>
       </tr>`;
@@ -789,7 +801,8 @@
 
     els.tfootMsg.textContent = rows.length===0 ? 'Nenhum registro encontrado com os filtros atuais.' : '';
 
-    if(updateCharts) renderCharts(chartRows, statsBase);
+    // Envia 'rows' (dados completamente filtrados) para o gráfico de Unidades para pular os que zeram.
+    if(updateCharts) renderCharts(rows, statsBase);
   }
 
   function updateSortIndicators(){
@@ -834,7 +847,7 @@
     document.getElementById('mdFieldCliente').textContent = r.cliente || '—';
     document.getElementById('mdFieldOrigem').textContent = r.origemDestino || '—';
     document.getElementById('mdFieldEmissao').textContent = r.dataEmissao || '—';
-    document.getElementById('mdFieldValidade').textContent = r.periodoValidade || '—';
+    document.getElementById('mdFieldValidade').textContent = r.periodoValidadeFull || '—'; // Retorna a Data Extensa Original
     document.getElementById('mdFieldDias').textContent = r.dias || '—';
     
     const mStatus = document.getElementById('mdFieldStatus');
@@ -847,10 +860,12 @@
     els.modalBackdrop.classList.remove('open');
   }
 
-  function renderCharts(chartRows, statsBase){
-    // por unidade
+  function renderCharts(rowsForUnits, statsBase){
+    // Grafico de Unidades: processa apenas "rowsForUnits" que sofrem influência de TUDO (incluindo clicks nos cartões de status)
     const byUnidade = {};
-    chartRows.forEach(r=>{ if(r.unidade) byUnidade[r.unidade] = (byUnidade[r.unidade]||0)+1; });
+    rowsForUnits.forEach(r=>{ if(r.unidade) byUnidade[r.unidade] = (byUnidade[r.unidade]||0)+1; });
+    
+    // Se a unidade tem 0 itens para os filtros atuais, ela nem sequer entra no objeto 'byUnidade'
     const unidades = Object.keys(byUnidade).sort((a,b)=>byUnidade[b]-byUnidade[a]);
     const unidadeVals = unidades.map(u=>byUnidade[u]);
 
@@ -877,7 +892,7 @@
       }
     });
 
-    // situação geral
+    // Gráfico de situação usa o "statsBase" mantendo a consistência geral
     const labels = ['Regulares', 'Vencendo', 'Vencidos'];
     const cReg = statsBase.filter(r=>r.flagRegular).length;
     const cVencendo = statsBase.filter(r=>r.flagVencendo).length;
