@@ -352,7 +352,7 @@
 
     <div class="toolbar">
       <div class="search-wrap">
-        <input type="text" id="search" placeholder="Buscar por frota, placa, cliente, origem ou destino…">
+        <input type="text" id="search" placeholder="Buscar por cliente, frota, placa, origem ou destino…">
         <button type="button" class="search-clear" id="searchClear">×</button>
       </div>
       <select id="filterStatus">
@@ -368,12 +368,11 @@
       <table>
         <thead>
           <tr>
+            <th data-key="cliente">Cliente <span class="arrow"></span></th>
             <th data-key="frota">Frota <span class="arrow"></span></th>
             <th data-key="placa">Placa <span class="arrow"></span></th>
             <th data-key="unidade">Unidade <span class="arrow"></span></th>
-            <th data-key="cliente">Cliente <span class="arrow"></span></th>
             <th data-key="origemDestino">Origem x Destino <span class="arrow"></span></th>
-            <th data-key="dataEmissao">Data Emissão <span class="arrow"></span></th>
             <th data-key="periodoValidade">Validade <span class="arrow"></span></th>
             <th data-key="dias">Dias <span class="arrow"></span></th>
             <th data-key="status">Status <span class="arrow"></span></th>
@@ -381,7 +380,7 @@
         </thead>
         <tbody id="tbody"></tbody>
         <tfoot>
-          <tr><td colspan="9" id="tfootMsg"></td></tr>
+          <tr><td colspan="8" id="tfootMsg"></td></tr>
         </tfoot>
       </table>
     </div>
@@ -409,15 +408,15 @@
     </div>
     <div class="modal-body">
       <div class="modal-grid">
+        <div class="modal-field"><span class="lbl">Cliente</span><span class="val" id="mdFieldCliente">—</span></div>
+        <div class="modal-field"><span class="lbl">Unidade</span><span class="val" id="mdFieldUnidade">—</span></div>
         <div class="modal-field"><span class="lbl">Frota</span><span class="val copyable" id="mdFieldFrota">—</span></div>
         <div class="modal-field"><span class="lbl">Placa</span><span class="val copyable" id="mdFieldPlaca">—</span></div>
-        <div class="modal-field"><span class="lbl">Unidade</span><span class="val" id="mdFieldUnidade">—</span></div>
-        <div class="modal-field"><span class="lbl">Cliente</span><span class="val" id="mdFieldCliente">—</span></div>
         <div class="modal-field"><span class="lbl">Origem x Destino</span><span class="val" id="mdFieldOrigem">—</span></div>
+        <div class="modal-field"><span class="lbl">Status</span><span class="val" id="mdFieldStatus">—</span></div>
         <div class="modal-field"><span class="lbl">Data Emissão</span><span class="val" id="mdFieldEmissao">—</span></div>
         <div class="modal-field"><span class="lbl">Período Validade</span><span class="val" id="mdFieldValidade">—</span></div>
         <div class="modal-field"><span class="lbl">Dias Restantes</span><span class="val" id="mdFieldDias">—</span></div>
-        <div class="modal-field" style="grid-column: span 2;"><span class="lbl">Status</span><span class="val" id="mdFieldStatus">—</span></div>
       </div>
     </div>
   </div>
@@ -456,7 +455,7 @@
 
   let rawRows = [];
   let currentPageRows = [];
-  let sortState = {key:'frota', dir:1};
+  let sortState = {key:'cliente', dir:1}; // Inicializa a ordenação pela coluna Cliente
   let charts = {unidade:null, status:null};
   let refreshTimer = null;
   const PAGE_SIZE = 100;
@@ -584,11 +583,17 @@
         const placa = iPlaca > -1 ? cellText(c[iPlaca]) : '';
         const unidade = iUnidade > -1 ? cellText(c[iUnidade]) : '';
         const dataEmissao = iEmissao > -1 ? cellText(c[iEmissao]) : '';
-        const periodoValidade = iValidade > -1 ? cellText(c[iValidade]) : '';
         const dias = iDias > -1 ? cellText(c[iDias]) : '';
         const status = iStatus > -1 ? cellText(c[iStatus]) : '';
         const cliente = iCliente > -1 ? cellText(c[iCliente]) : '';
         const origemDestino = iOrigemDestino > -1 ? cellText(c[iOrigemDestino]) : '';
+        
+        let periodoValidade = iValidade > -1 ? cellText(c[iValidade]) : '';
+        
+        // Remove a primeira data mantendo apenas o que vem após o " A "
+        if (periodoValidade.toUpperCase().includes(' A ')) {
+            periodoValidade = periodoValidade.toUpperCase().split(' A ').pop().trim();
+        }
 
         const situacao = getATFState(dias, status);
 
@@ -747,12 +752,11 @@
 
     els.tbody.innerHTML = pageRows.map((r,i)=>{
       return `<tr data-i="${i}">
-        <td class="name">${escapeHtml(r.frota || '—')}</td>
+        <td class="name">${escapeHtml(r.cliente || '—')}</td>
+        <td>${escapeHtml(r.frota)}</td>
         <td>${escapeHtml(r.placa)}</td>
         <td>${escapeHtml(r.unidade)}</td>
-        <td>${escapeHtml(r.cliente)}</td>
         <td>${escapeHtml(r.origemDestino)}</td>
-        <td>${escapeHtml(r.dataEmissao)}</td>
         <td>${escapeHtml(r.periodoValidade)}</td>
         <td>${escapeHtml(r.dias)}</td>
         <td>${badgeStatus(r)}</td>
@@ -766,10 +770,10 @@
     els.mobileCards.innerHTML = pageRows.map((r,i)=>{
       return `<div class="mcard" data-i="${i}">
         <div class="mcard-top">
-          <span class="mcard-name">${escapeHtml(r.frota || '—')}</span>
+          <span class="mcard-name">${escapeHtml(r.cliente || '—')}</span>
           <span class="mcard-unidade">${escapeHtml(r.unidade)}</span>
         </div>
-        <div class="mcard-sub">${escapeHtml(r.placa)} · Cliente: ${escapeHtml(r.cliente || 'N/A')}</div>
+        <div class="mcard-sub">Frota: ${escapeHtml(r.frota)} · Placa: ${escapeHtml(r.placa)}</div>
         <div class="mcard-chips">
           ${badgeStatus(r)}
         </div>
