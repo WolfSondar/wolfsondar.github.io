@@ -600,6 +600,18 @@
     return r.enviado === true && r.derStatus !== 'ATIVO';
   }
 
+  // quem está "Aguardando DER" sai dos demais filtros/contadores de status do DER
+  // (vencendo, vencido, sem cadastro) — mesmo que o status "cru" da planilha seja um desses.
+  function isDerVencendo(r){
+    return r.derStatus === 'VENCENDO' && !isEnviadoAguardando(r);
+  }
+  function isDerVencido(r){
+    return r.derStatus === 'VENCIDO' && !isEnviadoAguardando(r);
+  }
+  function isDerSemCadastro(r){
+    return r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r);
+  }
+
   els.btnRefresh.addEventListener('click', () => loadData());
   els.search.addEventListener('input', () => {
     els.searchClear.style.display = els.search.value ? 'flex' : 'none';
@@ -1113,15 +1125,25 @@
       return false;
     }
 
+    // filtro do dropdown/card de status DER — quem está "Aguardando DER" nunca aparece
+    // em vencendo/vencido/sem cadastro, mesmo que o status cru da planilha seja um desses
+    function matchesDerFilter(r){
+      if(!fDer) return true;
+      if(fDer === 'VENCENDO') return isDerVencendo(r);
+      if(fDer === 'VENCIDO') return isDerVencido(r);
+      if(fDer === 'SEM_CADASTRO') return isDerSemCadastro(r);
+      return r.derStatus === fDer; // ATIVO
+    }
+
     // linhas para a tabela (todos os filtros, incluindo busca)
     let rows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!((r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(!(isDerSemCadastro(r) || r.cnhStatus === 'SEM_CADASTRO')) return false;
       } else if(cadastroFilterStatus === 'AGUARDANDO'){
         if(!isEnviadoAguardando(r)) return false;
       } else {
-        if(fDer && r.derStatus !== fDer) return false;
+        if(!matchesDerFilter(r)) return false;
         if(fCnh && r.cnhStatus !== fCnh) return false;
       }
       if(fMultas && !(r.multasPendentes > 0)) return false;
@@ -1133,11 +1155,11 @@
     let chartRows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!((r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(!(isDerSemCadastro(r) || r.cnhStatus === 'SEM_CADASTRO')) return false;
       } else if(cadastroFilterStatus === 'AGUARDANDO'){
         if(!isEnviadoAguardando(r)) return false;
       } else {
-        if(fDer && r.derStatus !== fDer) return false;
+        if(!matchesDerFilter(r)) return false;
         if(fCnh && r.cnhStatus !== fCnh) return false;
       }
       if(fMultas && !(r.multasPendentes > 0)) return false;
@@ -1161,11 +1183,11 @@
     const statsBase = fFilial ? rawRows.filter(r => r.filial === fFilial) : rawRows;
     const total = statsBase.length;
     const derAtivo = statsBase.filter(r=>r.derStatus==='ATIVO').length;
-    const derVencendo = statsBase.filter(r=>r.derStatus==='VENCENDO').length;
-    const derVencido = statsBase.filter(r=>r.derStatus==='VENCIDO').length;
+    const derVencendo = statsBase.filter(isDerVencendo).length;
+    const derVencido = statsBase.filter(isDerVencido).length;
     const cnhAtivo = statsBase.filter(r=>r.cnhStatus==='ATIVO').length;
     const cnhVencido = statsBase.filter(r=>r.cnhStatus==='VENCIDO').length;
-    const semCadastro = statsBase.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length;
+    const semCadastro = statsBase.filter(r=>isDerSemCadastro(r) || r.cnhStatus==='SEM_CADASTRO').length;
     const enviados = statsBase.filter(isEnviadoAguardando).length;
     const comMultas = statsBase.filter(r=>r.multasPendentes > 0).length;
 
@@ -1475,8 +1497,8 @@
       labels = ['DER ativo','DER vencendo','DER vencido'];
       data = [
         statusRows.filter(r=>r.derStatus==='ATIVO').length,
-        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
-        statusRows.filter(r=>r.derStatus==='VENCIDO').length
+        statusRows.filter(isDerVencendo).length,
+        statusRows.filter(isDerVencido).length
       ];
       colors = [COL.derAtivo, COL.derVencendo, COL.derVencido];
       targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'}];
@@ -1493,7 +1515,7 @@
     } else if(mode === 'cadastro'){
       labels = ['Sem cadastro','Aguardando DER'];
       data = [
-        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length,
+        statusRows.filter(r=>isDerSemCadastro(r) || r.cnhStatus==='SEM_CADASTRO').length,
         statusRows.filter(isEnviadoAguardando).length
       ];
       colors = [COL.semCadastro, COL.aguardando];
@@ -1503,11 +1525,11 @@
       labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida','Sem cadastro'];
       data = [
         statusRows.filter(r=>r.derStatus==='ATIVO').length,
-        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
-        statusRows.filter(r=>r.derStatus==='VENCIDO').length,
+        statusRows.filter(isDerVencendo).length,
+        statusRows.filter(isDerVencido).length,
         statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length,
-        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length
+        statusRows.filter(r=>isDerSemCadastro(r) || r.cnhStatus==='SEM_CADASTRO').length
       ];
       colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.cnhAtiva, COL.cnhVencida, COL.semCadastro];
       targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'}];
