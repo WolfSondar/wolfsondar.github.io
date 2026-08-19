@@ -599,7 +599,7 @@
               <th>CPF</th>
               <th>CNH</th>
               <th>Validade cadastro</th>
-              <th>Cadastro</th>
+              <th>Filial</th>
               <th>Divergência</th>
             </tr>
           </thead>
@@ -1238,6 +1238,7 @@
           cnh: rel.cnh,
           validade: rel.validade,
           situacao: rel.situacao,
+          filial: condutor.filial,
           motivos,
         });
       }
@@ -1280,7 +1281,7 @@
         <td class="mono">${escapeHtml(d.cpf)}</td>
         <td class="mono">${escapeHtml(d.cnh)}</td>
         <td class="mono">${escapeHtml(d.validade)}</td>
-        <td>${escapeHtml(d.situacao)}</td>
+        <td>${escapeHtml(d.filial)}</td>
         <td>${d.motivos.map(motivoChip).join('')}</td>
       </tr>
     `).join('');
