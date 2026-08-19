@@ -231,6 +231,40 @@
     display:flex;align-items:center;justify-content:center;padding:0 4px;
     font-family:var(--font-mono);box-shadow:0 0 0 2px var(--navy-900);
   }
+
+  /* ---------- modal de conferência (relCondutores.xlsx) ---------- */
+  #confModalBackdrop .modal-card{position:relative;overflow:visible;}
+  #confModalBackdrop .modal-head{
+    position:relative;overflow:hidden;
+    background:linear-gradient(120deg,var(--navy-950),var(--navy-900) 60%,var(--navy-800));
+  }
+  #confModalBackdrop .modal-head::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:4px;
+    background-image:repeating-linear-gradient(90deg,var(--amber) 0 22px, transparent 22px 40px);
+    opacity:.85;
+  }
+  #confModalBackdrop .modal-head h2::before{content:"⚠ ";color:var(--amber);}
+  #confModalBackdrop .modal-body{padding-top:18px;}
+  .conf-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .conf-summary-pill{
+    font-family:var(--font-mono);font-size:11.5px;font-weight:600;
+    padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:var(--bg);color:var(--slate-600);
+  }
+  .conf-summary-pill.total{background:var(--navy-900);border-color:var(--navy-900);color:#fff;}
+  .conf-summary-pill.cnh{background:#f1e9fb;border-color:rgba(124,58,237,.3);color:#7c3aed;}
+  .conf-summary-pill.validade{background:var(--red-soft);border-color:rgba(229,72,77,.3);color:var(--red);}
+  #confModalBackdrop .table-wrap{border-radius:12px;max-height:min(52vh,460px);overflow-y:auto;}
+  #confModalBackdrop thead th{position:sticky;top:0;z-index:1;}
+  #confModalBackdrop tbody tr:nth-child(even){background:#fafbfd;}
+  #confModalBackdrop tbody tr:hover{background:var(--amber-soft);}
+  #confModalBackdrop td.mono{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
+  .conf-chip{
+    display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;
+    font-size:10.5px;font-weight:700;letter-spacing:.2px;margin:2px 4px 2px 0;cursor:default;white-space:nowrap;
+  }
+  .conf-chip.cnh{background:#f1e9fb;color:#7c3aed;border:1px solid rgba(124,58,237,.3);}
+  .conf-chip.validade{background:var(--red-soft);color:var(--red);border:1px solid rgba(229,72,77,.3);}
+
   .badge-multa{
     display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;
     font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
@@ -552,6 +586,7 @@
       <button class="modal-close" id="confModalClose">✕</button>
     </div>
     <div class="modal-body">
+      <div id="confSummary" class="conf-summary hidden"></div>
       <div id="confEmpty" class="state-msg hidden" style="padding:30px 0;">
         <strong>Tudo certo!</strong>
         Nenhuma divergência encontrada entre o relatório e o painel.
@@ -628,6 +663,7 @@
     confModalClose: document.getElementById('confModalClose'),
     confSub: document.getElementById('confSub'),
     confEmpty: document.getElementById('confEmpty'),
+    confSummary: document.getElementById('confSummary'),
     confTableWrap: document.getElementById('confTableWrap'),
     confTbody: document.getElementById('confTbody'),
   };
@@ -637,7 +673,6 @@
   // Se você mover o .html ou o .xlsx de pasta, ajuste este caminho.
   const XLSX_PATH = '../relCondutores.xlsx';
   let ultimaConferencia = [];
-  let ultimaConferenciaHash = '';
 
   let rawRows = [];      
   let rawMultas = [];    
@@ -1178,25 +1213,22 @@
     relatorioRows.forEach(rel => {
       const cpfKey = normalizeCpf(rel.cpf);
       const condutor = cpfKey ? byCpf[cpfKey] : null;
+      if(!condutor) return; // motorista não localizado no painel — fora do escopo da conferência
+
       const motivos = [];
+      const cnhRel = (rel.cnh || '').replace(/\D/g,'');
+      const cnhPainel = (condutor.cnhNumero || '').replace(/\D/g,'');
+      if(cnhRel && !cnhPainel){
+        motivos.push({tipo:'cnh', label:'CNH ausente no painel'});
+      } else if(cnhRel && cnhPainel && cnhRel !== cnhPainel){
+        motivos.push({tipo:'cnh', label:'CNH divergente', detalhe:`relatório ${rel.cnh} · painel ${condutor.cnhNumero}`});
+      }
 
-      if(!condutor){
-        motivos.push('Motorista não encontrado no painel (CPF não localizado)');
-      } else {
-        const cnhRel = (rel.cnh || '').replace(/\D/g,'');
-        const cnhPainel = (condutor.cnhNumero || '').replace(/\D/g,'');
-        if(cnhRel && !cnhPainel){
-          motivos.push('CNH não cadastrada no painel');
-        } else if(cnhRel && cnhPainel && cnhRel !== cnhPainel){
-          motivos.push(`CNH divergente (relatório: ${rel.cnh} · painel: ${condutor.cnhNumero})`);
-        }
-
-        const dtRel = parseBrDateStr(rel.validade);
-        if(dtRel && !condutor.derVal){
-          motivos.push('Validade não cadastrada no painel');
-        } else if(dtRel && condutor.derVal && !sameDate(dtRel, condutor.derVal)){
-          motivos.push(`Validade divergente (relatório: ${rel.validade} · painel: ${fmtDate(condutor.derVal)})`);
-        }
+      const dtRel = parseBrDateStr(rel.validade);
+      if(dtRel && !condutor.derVal){
+        motivos.push({tipo:'validade', label:'Validade ausente no painel'});
+      } else if(dtRel && condutor.derVal && !sameDate(dtRel, condutor.derVal)){
+        motivos.push({tipo:'validade', label:'Validade divergente', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
       }
 
       if(motivos.length){
@@ -1206,7 +1238,7 @@
           cnh: rel.cnh,
           validade: rel.validade,
           situacao: rel.situacao,
-          motivo: motivos.join(' · '),
+          motivos,
         });
       }
     });
@@ -1215,26 +1247,41 @@
     return divergencias;
   }
 
-  function renderConferenciaModal(){
-    els.confSub.textContent = ultimaConferencia.length
-      ? `${ultimaConferencia.length} motorista(s) com pendência · verificado ${new Date().toLocaleString('pt-BR')}`
-      : `Nenhuma divergência · verificado ${new Date().toLocaleString('pt-BR')}`;
+  function motivoChip(m){
+    const cls = m.tipo === 'cnh' ? 'conf-chip cnh' : 'conf-chip validade';
+    const title = m.detalhe ? ` title="${escapeHtml(m.detalhe)}"` : '';
+    return `<span class="${cls}"${title}>${escapeHtml(m.label)}</span>`;
+  }
 
-    if(!ultimaConferencia.length){
+  function renderConferenciaModal(){
+    const total = ultimaConferencia.length;
+    const countCnh = ultimaConferencia.filter(d => d.motivos.some(m=>m.tipo==='cnh')).length;
+    const countValidade = ultimaConferencia.filter(d => d.motivos.some(m=>m.tipo==='validade')).length;
+
+    els.confSub.textContent = `Verificado em ${new Date().toLocaleString('pt-BR')}`;
+
+    if(!total){
+      els.confSummary.classList.add('hidden');
       els.confEmpty.classList.remove('hidden');
       els.confTableWrap.classList.add('hidden');
       return;
     }
     els.confEmpty.classList.add('hidden');
+    els.confSummary.classList.remove('hidden');
+    els.confSummary.innerHTML = `
+      <span class="conf-summary-pill total">${total} motorista${total>1?'s':''} com pendência</span>
+      ${countCnh ? `<span class="conf-summary-pill cnh">${countCnh} com CNH</span>` : ''}
+      ${countValidade ? `<span class="conf-summary-pill validade">${countValidade} com validade</span>` : ''}
+    `;
     els.confTableWrap.classList.remove('hidden');
     els.confTbody.innerHTML = ultimaConferencia.map(d => `
       <tr>
         <td class="name">${escapeHtml(d.nome)}</td>
-        <td>${escapeHtml(d.cpf)}</td>
-        <td>${escapeHtml(d.cnh)}</td>
-        <td>${escapeHtml(d.validade)}</td>
+        <td class="mono">${escapeHtml(d.cpf)}</td>
+        <td class="mono">${escapeHtml(d.cnh)}</td>
+        <td class="mono">${escapeHtml(d.validade)}</td>
         <td>${escapeHtml(d.situacao)}</td>
-        <td>${escapeHtml(d.motivo)}</td>
+        <td>${d.motivos.map(motivoChip).join('')}</td>
       </tr>
     `).join('');
   }
@@ -1255,13 +1302,6 @@
 
       els.confBadge.textContent = divergencias.length;
       els.confBadge.classList.toggle('hidden', divergencias.length === 0);
-
-      const hash = JSON.stringify(divergencias.map(d => d.cpf + '|' + d.motivo));
-      const mudou = hash !== ultimaConferenciaHash;
-      ultimaConferenciaHash = hash;
-      if(divergencias.length && mudou){
-        openConferenciaModal();
-      }
     }catch(err){
       console.warn('Conferência do relCondutores.xlsx não realizada:', err);
     }
