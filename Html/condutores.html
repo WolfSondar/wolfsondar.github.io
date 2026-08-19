@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --navy-950:#0a1930;
@@ -224,6 +225,12 @@
   .badge.vencendo{background:var(--amber-soft);color:#c07f16;}
   .badge.vencido{background:var(--red-soft);color:var(--red);}
   .badge.outro{background:#eef1f7;color:var(--slate-600);}
+  .conf-badge{
+    position:absolute;top:-7px;right:-7px;background:var(--red);color:#fff;
+    font-size:10px;font-weight:700;border-radius:50%;min-width:18px;height:18px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+    font-family:var(--font-mono);box-shadow:0 0 0 2px var(--navy-900);
+  }
   .badge-multa{
     display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;
     font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
@@ -341,6 +348,10 @@
       <select id="filterFilial">
         <option value="">Todas as filiais</option>
       </select>
+      <button class="btn btn-ghost" id="btnConferencia" style="border-color:rgba(255,255,255,.25);color:#fff;position:relative;">
+        Conferência CNH/DER
+        <span id="confBadge" class="conf-badge hidden">0</span>
+      </button>
       <button class="btn btn-ghost" id="btnRefresh" style="border-color:rgba(255,255,255,.25);color:#fff;">Atualizar agora</button>
     </div>
   </div>
@@ -531,6 +542,38 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="confModalBackdrop">
+  <div class="modal-card" style="max-width:920px;">
+    <div class="modal-head">
+      <div>
+        <h2>Conferência — relCondutores.xlsx</h2>
+        <p id="confSub">—</p>
+      </div>
+      <button class="modal-close" id="confModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="confEmpty" class="state-msg hidden" style="padding:30px 0;">
+        <strong>Tudo certo!</strong>
+        Nenhuma divergência encontrada entre o relatório e o painel.
+      </div>
+      <div class="table-wrap hidden" id="confTableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome completo</th>
+              <th>CPF</th>
+              <th>CNH</th>
+              <th>Validade cadastro</th>
+              <th>Cadastro</th>
+              <th>Divergência</th>
+            </tr>
+          </thead>
+          <tbody id="confTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -579,7 +622,22 @@
     modalBackdrop: document.getElementById('modalBackdrop'),
     modalClose: document.getElementById('modalClose'),
     btnAllFiliais: document.getElementById('btnAllFiliais'),
+    btnConferencia: document.getElementById('btnConferencia'),
+    confBadge: document.getElementById('confBadge'),
+    confModalBackdrop: document.getElementById('confModalBackdrop'),
+    confModalClose: document.getElementById('confModalClose'),
+    confSub: document.getElementById('confSub'),
+    confEmpty: document.getElementById('confEmpty'),
+    confTableWrap: document.getElementById('confTableWrap'),
+    confTbody: document.getElementById('confTbody'),
   };
+
+  // Caminho do relCondutores.xlsx a partir de Html/condutores.html.
+  // O arquivo fica na raiz do repositório (ao lado do index.html) — por isso o "../".
+  // Se você mover o .html ou o .xlsx de pasta, ajuste este caminho.
+  const XLSX_PATH = '../relCondutores.xlsx';
+  let ultimaConferencia = [];
+  let ultimaConferenciaHash = '';
 
   let rawRows = [];      
   let rawMultas = [];    
@@ -611,7 +669,10 @@
   });
   els.modalClose.addEventListener('click', closeModal);
   els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
-  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeModal(); });
+  els.btnConferencia.addEventListener('click', () => openConferenciaModal());
+  els.confModalClose.addEventListener('click', closeConferenciaModal);
+  els.confModalBackdrop.addEventListener('click', (e) => { if(e.target === els.confModalBackdrop) closeConferenciaModal(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ closeModal(); closeConferenciaModal(); } });
   els.filterFilial.addEventListener('change', () => { currentPage = 1; syncActiveCards(); render(true); });
   els.btnAllFiliais.addEventListener('click', () => {
     els.filterFilial.value = '';
@@ -1030,6 +1091,7 @@
       buildFilialOptions();
       syncActiveCards();
       render(true);
+      runConferencia(merged);
 
       if(refreshTimer) clearInterval(refreshTimer);
       refreshTimer = setInterval(() => loadData(), 5 * 60 * 1000);
@@ -1054,6 +1116,155 @@
   function fmtDate(d){
     if(!d) return '—';
     return d.toLocaleDateString('pt-BR');
+  }
+
+  // ---------- Conferência com relCondutores.xlsx ----------
+
+  function parseBrDateStr(str){
+    const t = (str||'').toString().trim();
+    const m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if(!m) return null;
+    const d = new Date(+m[3], +m[2]-1, +m[1]);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function sameDate(a, b){
+    if(!a || !b) return false;
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+
+  async function fetchRelatorioXlsx(){
+    const res = await fetch(XLSX_PATH + '?_=' + Date.now());
+    if(!res.ok) throw new Error('Arquivo relCondutores.xlsx não encontrado em ' + XLSX_PATH);
+    const buf = await res.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+
+    const headerIdx = rows.findIndex(r => r.some(c => (c||'').toString().trim().toUpperCase() === 'NOME COMPLETO'));
+    if(headerIdx === -1) throw new Error('Não encontrei a coluna "NOME COMPLETO" no relCondutores.xlsx.');
+    const header = rows[headerIdx].map(c => (c||'').toString().trim().toUpperCase());
+    const iNome = header.indexOf('NOME COMPLETO');
+    const iCpf = header.indexOf('CPF');
+    const iCnh = header.indexOf('CNH');
+    const iValidade = header.indexOf('VALIDADE CADASTRO');
+    const iSituacao = header.indexOf('SITUAÇÃO CADASTRO');
+
+    const out = [];
+    for(let i = headerIdx + 1; i < rows.length; i++){
+      const r = rows[i];
+      if(!r) continue;
+      const nome = (r[iNome] || '').toString().trim();
+      if(!nome) continue;
+      out.push({
+        nome,
+        cpf: ((iCpf > -1 ? r[iCpf] : '') || '').toString().trim(),
+        cnh: ((iCnh > -1 ? r[iCnh] : '') || '').toString().trim(),
+        validade: ((iValidade > -1 ? r[iValidade] : '') || '').toString().trim(),
+        situacao: ((iSituacao > -1 ? r[iSituacao] : '') || '').toString().trim(),
+      });
+    }
+    return out;
+  }
+
+  function compararRelatorio(relatorioRows, condutorRows){
+    const byCpf = {};
+    condutorRows.forEach(r => {
+      const k = normalizeCpf(r.cpf);
+      if(k) byCpf[k] = r;
+    });
+
+    const divergencias = [];
+    relatorioRows.forEach(rel => {
+      const cpfKey = normalizeCpf(rel.cpf);
+      const condutor = cpfKey ? byCpf[cpfKey] : null;
+      const motivos = [];
+
+      if(!condutor){
+        motivos.push('Motorista não encontrado no painel (CPF não localizado)');
+      } else {
+        const cnhRel = (rel.cnh || '').replace(/\D/g,'');
+        const cnhPainel = (condutor.cnhNumero || '').replace(/\D/g,'');
+        if(cnhRel && !cnhPainel){
+          motivos.push('CNH não cadastrada no painel');
+        } else if(cnhRel && cnhPainel && cnhRel !== cnhPainel){
+          motivos.push(`CNH divergente (relatório: ${rel.cnh} · painel: ${condutor.cnhNumero})`);
+        }
+
+        const dtRel = parseBrDateStr(rel.validade);
+        if(dtRel && !condutor.derVal){
+          motivos.push('Validade não cadastrada no painel');
+        } else if(dtRel && condutor.derVal && !sameDate(dtRel, condutor.derVal)){
+          motivos.push(`Validade divergente (relatório: ${rel.validade} · painel: ${fmtDate(condutor.derVal)})`);
+        }
+      }
+
+      if(motivos.length){
+        divergencias.push({
+          nome: rel.nome,
+          cpf: rel.cpf,
+          cnh: rel.cnh,
+          validade: rel.validade,
+          situacao: rel.situacao,
+          motivo: motivos.join(' · '),
+        });
+      }
+    });
+
+    divergencias.sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    return divergencias;
+  }
+
+  function renderConferenciaModal(){
+    els.confSub.textContent = ultimaConferencia.length
+      ? `${ultimaConferencia.length} motorista(s) com pendência · verificado ${new Date().toLocaleString('pt-BR')}`
+      : `Nenhuma divergência · verificado ${new Date().toLocaleString('pt-BR')}`;
+
+    if(!ultimaConferencia.length){
+      els.confEmpty.classList.remove('hidden');
+      els.confTableWrap.classList.add('hidden');
+      return;
+    }
+    els.confEmpty.classList.add('hidden');
+    els.confTableWrap.classList.remove('hidden');
+    els.confTbody.innerHTML = ultimaConferencia.map(d => `
+      <tr>
+        <td class="name">${escapeHtml(d.nome)}</td>
+        <td>${escapeHtml(d.cpf)}</td>
+        <td>${escapeHtml(d.cnh)}</td>
+        <td>${escapeHtml(d.validade)}</td>
+        <td>${escapeHtml(d.situacao)}</td>
+        <td>${escapeHtml(d.motivo)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function openConferenciaModal(){
+    renderConferenciaModal();
+    els.confModalBackdrop.classList.add('open');
+  }
+  function closeConferenciaModal(){
+    els.confModalBackdrop.classList.remove('open');
+  }
+
+  async function runConferencia(condutorRows){
+    try{
+      const relatorio = await fetchRelatorioXlsx();
+      const divergencias = compararRelatorio(relatorio, condutorRows);
+      ultimaConferencia = divergencias;
+
+      els.confBadge.textContent = divergencias.length;
+      els.confBadge.classList.toggle('hidden', divergencias.length === 0);
+
+      const hash = JSON.stringify(divergencias.map(d => d.cpf + '|' + d.motivo));
+      const mudou = hash !== ultimaConferenciaHash;
+      ultimaConferenciaHash = hash;
+      if(divergencias.length && mudou){
+        openConferenciaModal();
+      }
+    }catch(err){
+      console.warn('Conferência do relCondutores.xlsx não realizada:', err);
+    }
   }
 
   function daysBar(days, status){
