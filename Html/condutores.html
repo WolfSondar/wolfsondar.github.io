@@ -1248,16 +1248,12 @@
       const motivos = [];
       const cnhRel = (rel.cnh || '').replace(/\D/g,'');
       const cnhPainel = (condutor.cnhNumero || '').replace(/\D/g,'');
-      if(cnhRel && !cnhPainel){
-        motivos.push({tipo:'cnh', label:'CNH ausente no painel'});
-      } else if(cnhRel && cnhPainel && cnhRel !== cnhPainel){
+      if(cnhRel && cnhPainel && cnhRel !== cnhPainel){
         motivos.push({tipo:'cnh', label:'CNH divergente', detalhe:`relatório ${rel.cnh} · painel ${condutor.cnhNumero}`});
       }
 
       const dtRel = parseBrDateStr(rel.validade);
-      if(dtRel && !condutor.derVal){
-        motivos.push({tipo:'validade', label:'Validade ausente no painel'});
-      } else if(dtRel && condutor.derVal && !sameDate(dtRel, condutor.derVal)){
+      if(dtRel && condutor.derVal && !sameDate(dtRel, condutor.derVal)){
         motivos.push({tipo:'validade', label:'Validade divergente', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
       }
 
