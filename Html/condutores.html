@@ -542,12 +542,10 @@
 
   // Planilha de Multas (separada da planilha de condutores)
   const SHEET_ID_MULTAS = '1KAlerqNKe29NMIg9Ym5x_5xyUiUD8rboIhecnEOE2fU';
-  // Nome da aba dentro da planilha de multas. Ajuste aqui se o nome da aba for diferente.
   const MULTAS_TAB = 'Página1';
 
   // Planilha de Controle de Documentação (separada, também dividida por filial)
   const SHEET_ID_DOCS = '1-pFdr863Az92E-PJbnIBKNfwDEuSlrbZARNB6KpgMRc';
-  // As colunas de documento que viram tag quando != "OK" (rótulo curto pra exibir no card)
   const DOC_COLUMNS = [
     { header: 'CTPS', tag: 'CTPS' },
     { header: 'CNH', tag: 'CNH' },
@@ -583,21 +581,19 @@
     btnAllFiliais: document.getElementById('btnAllFiliais'),
   };
 
-  let rawRows = [];      // dados normalizados
-  let rawMultas = [];    // multas normalizadas (só as que têm CONDUTOR preenchido)
-  let currentPageRows = []; // linhas exibidas na página atual da tabela
+  let rawRows = [];      
+  let rawMultas = [];    
+  let currentPageRows = []; 
   let sortState = {key:'motorista', dir:1};
   let charts = {filial:null, status:null};
   let refreshTimer = null;
   const PAGE_SIZE = 100;
   let currentPage = 1;
-  let cadastroFilterStatus = ''; // filtro unificado dos cards "Sem cadastro" / "Aguardando DER": '' | 'SEM_CADASTRO' | 'AGUARDANDO'
-  let multasFilterActive = false; // filtro do card "Multas": true = mostra só quem tem multa pendente
+  let cadastroFilterStatus = ''; 
+  let multasFilterActive = false; 
 
   function isEnviadoAguardando(r){
-    // enviado para o DER e ainda aguardando confirmação de validade —
-    // se o DER já está ATIVO, a confirmação já veio, então não conta como "aguardando"
-    return r.enviado === true && r.derStatus !== 'ATIVO';
+    return r.derStatus === 'AGUARDANDO';
   }
 
   els.btnRefresh.addEventListener('click', () => loadData());
@@ -627,6 +623,7 @@
   els.filterStatusCnh.addEventListener('change', () => { cadastroFilterStatus = ''; currentPage = 1; syncActiveCards(); render(true); });
   els.pgPrev.addEventListener('click', () => { if(currentPage > 1){ currentPage--; render(); } });
   els.pgNext.addEventListener('click', () => { currentPage++; render(); });
+  
   document.querySelectorAll('.stat[data-filter-type]').forEach(card => {
     card.addEventListener('click', () => {
       const type = card.dataset.filterType;
@@ -647,13 +644,11 @@
         cadastroFilterStatus = '';
         multasFilterActive = false;
       } else if(type === 'cadastro' || type === 'enviado'){
-        // filtro unificado: clicar em "Sem cadastro" ou "Enviados" alterna entre os dois estados
         els.filterStatusDer.value = '';
         els.filterStatusCnh.value = '';
         cadastroFilterStatus = (cadastroFilterStatus === value) ? '' : value;
         multasFilterActive = false;
       } else if(type === 'multas'){
-        // card "Multas": mostra só quem tem multa pendente, some com os demais filtros de status
         els.filterStatusDer.value = '';
         els.filterStatusCnh.value = '';
         cadastroFilterStatus = '';
@@ -699,19 +694,12 @@
     els.statusText.textContent = text;
   }
 
-  function excelDateToJs(serial){
-    if(serial === null || serial === undefined || serial === '') return null;
-    // gviz já entrega objetos Date() como string "Date(y,m,d)"
-    return null;
-  }
-
   function parseGvizDate(cell){
     if(!cell) return null;
     if(cell.v === null || cell.v === undefined || cell.v === '') return null;
     if(typeof cell.v === 'string' && cell.v.startsWith('Date(')){
       const parts = cell.v.replace('Date(','').replace(')','').split(',').map(Number);
       const d = new Date(parts[0], parts[1], parts[2]);
-      // datas "vazias" no Sheets viram serial 0 = 30/12/1899 (ou próximo) — tratar como sem cadastro
       if(parts[0] < 1950) return null;
       return d;
     }
@@ -724,7 +712,6 @@
   }
 
   function cellBool(cell){
-    // coluna ENVIADOS vem como checkbox (TRUE/FALSE) do Google Sheets
     if(!cell) return false;
     if(cell.v === true) return true;
     if(typeof cell.v === 'string'){
@@ -750,10 +737,8 @@
   }
 
   function sanitizeDays(v){
-    // descarta valores absurdos (ex: -46237), que aparecem quando a planilha calcula
-    // "dias restantes" em cima de uma data de validade vazia (bug clássico do Sheets/Excel)
     if(v === null || v === undefined || isNaN(v)) return null;
-    if(Math.abs(v) > 3650) return null; // > 10 anos não é um prazo real de validade
+    if(Math.abs(v) > 3650) return null; 
     return v;
   }
 
@@ -761,9 +746,6 @@
     const t = (text||'').toString().trim().toUpperCase();
     let base;
     if(days === null || isNaN(days)){
-      // sem data de validade nem dias confiáveis: nunca é "vencido", é falta de cadastro —
-      // mesmo que o texto da própria planilha diga "VENCIDO" (pode estar contaminado pelo
-      // mesmo bug de dias calculados sobre data vazia)
       return 'SEM_CADASTRO';
     }
     if(t.includes('VENCID')) base = 'VENCIDO';
@@ -812,6 +794,10 @@
         const dataPetDate = iDataPet>-1 ? parseGvizDate(c[iDataPet]) : null;
         const derDiasCalc = sanitizeDays(derValDate ? daysUntil(derValDate) : parseNumOrNull(iDerDias>-1 ? cellText(c[iDerDias]) : ''));
         const cnhDiasCalc = sanitizeDays(cnhValDate ? daysUntil(cnhValDate) : parseNumOrNull(iCnhDias>-1 ? cellText(c[iCnhDias]) : ''));
+        
+        let rawDerStatus = normalizeStatus(iDerStatus>-1 ? cellText(c[iDerStatus]) : '', derDiasCalc, 30);
+        let enviadoFlag = iEnviado>-1 ? cellBool(c[iEnviado]) : false;
+
         return {
           motorista: cellText(c[iNome]),
           cpf: iCpf>-1 ? cellText(c[iCpf]) : '',
@@ -822,7 +808,8 @@
           sexo: iSexo>-1 ? cellText(c[iSexo]) : '',
           derVal: derValDate,
           derDias: isNaN(derDiasCalc) ? null : derDiasCalc,
-          derStatus: normalizeStatus(iDerStatus>-1 ? cellText(c[iDerStatus]) : '', derDiasCalc, 30),
+          // A MÁGICA ACONTECE AQUI: Substitui o status na raiz para ignorar lógicas futuras
+          derStatus: (enviadoFlag && rawDerStatus !== 'ATIVO') ? 'AGUARDANDO' : rawDerStatus,
           cnhNumero: iCnhNum>-1 ? cellText(c[iCnhNum]) : '',
           cnhVal: cnhValDate,
           cnhDias: isNaN(cnhDiasCalc) ? null : cnhDiasCalc,
@@ -832,7 +819,7 @@
           numPeticionamento: iNumPet>-1 ? cellText(c[iNumPet]) : '',
           problemas: iProblemas>-1 ? cellText(c[iProblemas]) : '',
           observacao: iObs>-1 ? cellText(c[iObs]) : '',
-          enviado: iEnviado>-1 ? cellBool(c[iEnviado]) : false,
+          enviado: enviadoFlag,
         };
       });
   }
@@ -843,7 +830,7 @@
 
   function normalizeName(text){
     return (text||'').toString()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // remove acentos
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'') 
       .trim().toUpperCase().replace(/\s+/g,' ');
   }
 
@@ -1070,6 +1057,7 @@
   }
 
   function daysBar(days, status){
+    if(status === 'AGUARDANDO') return {pct:100, color:'var(--navy-700)', label:'Aguard. DER'};
     if(status === 'SEM_CADASTRO' || days === null || isNaN(days)) return {pct:0, color:'var(--slate-400)', label:'—'};
     let color = 'var(--green)';
     if(days < 0) color = 'var(--red)';
@@ -1101,14 +1089,12 @@
     let rows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!((r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(r.derStatus === 'AGUARDANDO') return false; // Proteção extra: bloqueia quem está aguardando
       } else if(cadastroFilterStatus === 'AGUARDANDO'){
-        if(!isEnviadoAguardando(r)) return false;
+        if(r.derStatus !== 'AGUARDANDO') return false;
       } else {
-        if(fDer){
-          if(r.derStatus !== fDer) return false;
-          if(isEnviadoAguardando(r)) return false;
-        }
+        if(fDer && r.derStatus !== fDer) return false;
         if(fCnh && r.cnhStatus !== fCnh) return false;
       }
       if(fMultas && !(r.multasPendentes > 0)) return false;
@@ -1119,14 +1105,12 @@
     let chartRows = rawRows.filter(r=>{
       if(fFilial && r.filial !== fFilial) return false;
       if(cadastroFilterStatus === 'SEM_CADASTRO'){
-        if(!((r.derStatus === 'SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(!(r.derStatus === 'SEM_CADASTRO' || r.cnhStatus === 'SEM_CADASTRO')) return false;
+        if(r.derStatus === 'AGUARDANDO') return false;
       } else if(cadastroFilterStatus === 'AGUARDANDO'){
-        if(!isEnviadoAguardando(r)) return false;
+        if(r.derStatus !== 'AGUARDANDO') return false;
       } else {
-        if(fDer){
-          if(r.derStatus !== fDer) return false;
-          if(isEnviadoAguardando(r)) return false;
-        }
+        if(fDer && r.derStatus !== fDer) return false;
         if(fCnh && r.cnhStatus !== fCnh) return false;
       }
       if(fMultas && !(r.multasPendentes > 0)) return false;
@@ -1149,12 +1133,12 @@
     const statsBase = fFilial ? rawRows.filter(r => r.filial === fFilial) : rawRows;
     const total = statsBase.length;
     const derAtivo = statsBase.filter(r=>r.derStatus==='ATIVO').length;
-    const derVencendo = statsBase.filter(r=>r.derStatus==='VENCENDO' && !isEnviadoAguardando(r)).length;
-    const derVencido = statsBase.filter(r=>r.derStatus==='VENCIDO' && !isEnviadoAguardando(r)).length;
+    const derVencendo = statsBase.filter(r=>r.derStatus==='VENCENDO').length;
+    const derVencido = statsBase.filter(r=>r.derStatus==='VENCIDO').length;
     const cnhAtivo = statsBase.filter(r=>r.cnhStatus==='ATIVO').length;
     const cnhVencido = statsBase.filter(r=>r.cnhStatus==='VENCIDO').length;
-    const semCadastro = statsBase.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length;
-    const enviados = statsBase.filter(isEnviadoAguardando).length;
+    const semCadastro = statsBase.filter(r=>(r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO') && r.derStatus !== 'AGUARDANDO').length;
+    const enviados = statsBase.filter(r=>r.derStatus==='AGUARDANDO').length;
     const comMultas = statsBase.filter(r=>r.multasPendentes > 0).length;
 
     document.getElementById('stTotal').textContent = total;
@@ -1255,6 +1239,7 @@
     if(status === 'VENCENDO') return 'Vencendo (< 30 dias)';
     if(status === 'VENCIDO') return 'Vencido';
     if(status === 'SEM_CADASTRO') return 'Sem cadastro';
+    if(status === 'AGUARDANDO') return 'Aguardando DER';
     return '—';
   }
 
@@ -1388,7 +1373,7 @@
       els.filterStatusCnh.value = value;
       els.filterStatusDer.value = '';
       cadastroFilterStatus = '';
-    } else if(type === 'cadastro'){
+    } else if(type === 'cadastro' || type === 'enviado'){
       if(cadastroFilterStatus === value) return false;
       cadastroFilterStatus = value;
       els.filterStatusDer.value = '';
@@ -1449,15 +1434,16 @@
     };
     let labels, data, colors, subtitle, targets;
     if(mode === 'der'){
-      labels = ['DER ativo','DER vencendo','DER vencido'];
+      labels = ['DER ativo','DER vencendo','DER vencido', 'Aguardando'];
       data = [
         statusRows.filter(r=>r.derStatus==='ATIVO').length,
-        statusRows.filter(r=>r.derStatus==='VENCENDO' && !isEnviadoAguardando(r)).length,
-        statusRows.filter(r=>r.derStatus==='VENCIDO' && !isEnviadoAguardando(r)).length
+        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
+        statusRows.filter(r=>r.derStatus==='VENCIDO').length,
+        statusRows.filter(r=>r.derStatus==='AGUARDANDO').length
       ];
-      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido];
-      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'}];
-      subtitle = 'DER — ativos, vencendo e vencidos';
+      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.aguardando];
+      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'enviado',value:'AGUARDANDO'}];
+      subtitle = 'DER — ativos, vencendo, vencidos e aguardando';
     } else if(mode === 'cnh'){
       labels = ['CNH ativa','CNH vencida'];
       data = [
@@ -1470,24 +1456,25 @@
     } else if(mode === 'cadastro'){
       labels = ['Sem cadastro','Aguardando DER'];
       data = [
-        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length,
-        statusRows.filter(isEnviadoAguardando).length
+        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO') && r.derStatus !== 'AGUARDANDO').length,
+        statusRows.filter(r=>r.derStatus === 'AGUARDANDO').length
       ];
       colors = [COL.semCadastro, COL.aguardando];
-      targets = [{type:'cadastro',value:'SEM_CADASTRO'},{type:'cadastro',value:'AGUARDANDO'}];
+      targets = [{type:'cadastro',value:'SEM_CADASTRO'},{type:'enviado',value:'AGUARDANDO'}];
       subtitle = 'Sem cadastro x Enviados aguardando confirmação do DER';
     } else {
-      labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida','Sem cadastro'];
+      labels = ['DER ativo','DER vencendo','DER vencido','CNH ativa','CNH vencida','Sem cadastro', 'Aguardando'];
       data = [
         statusRows.filter(r=>r.derStatus==='ATIVO').length,
-        statusRows.filter(r=>r.derStatus==='VENCENDO' && !isEnviadoAguardando(r)).length,
-        statusRows.filter(r=>r.derStatus==='VENCIDO' && !isEnviadoAguardando(r)).length,
+        statusRows.filter(r=>r.derStatus==='VENCENDO').length,
+        statusRows.filter(r=>r.derStatus==='VENCIDO').length,
         statusRows.filter(r=>r.cnhStatus==='ATIVO').length,
         statusRows.filter(r=>r.cnhStatus==='VENCIDO').length,
-        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' && !isEnviadoAguardando(r)) || r.cnhStatus==='SEM_CADASTRO').length
+        statusRows.filter(r=>(r.derStatus==='SEM_CADASTRO' || r.cnhStatus==='SEM_CADASTRO') && r.derStatus !== 'AGUARDANDO').length,
+        statusRows.filter(r=>r.derStatus==='AGUARDANDO').length
       ];
-      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.cnhAtiva, COL.cnhVencida, COL.semCadastro];
-      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'}];
+      colors = [COL.derAtivo, COL.derVencendo, COL.derVencido, COL.cnhAtiva, COL.cnhVencida, COL.semCadastro, COL.aguardando];
+      targets = [{type:'der',value:'ATIVO'},{type:'der',value:'VENCENDO'},{type:'der',value:'VENCIDO'},{type:'cnh',value:'ATIVO'},{type:'cnh',value:'VENCIDO'},{type:'cadastro',value:'SEM_CADASTRO'},{type:'enviado',value:'AGUARDANDO'}];
       subtitle = 'DER x CNH — visão geral completa (inclui sem cadastro)';
     }
     document.getElementById('chartStatusSub').textContent = subtitle;
