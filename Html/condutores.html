@@ -244,7 +244,14 @@
     opacity:.85;
   }
   #confModalBackdrop .modal-head h2::before{content:"⚠ ";color:var(--amber);}
-  #confModalBackdrop .modal-body{padding-top:18px;}
+  #confModalBackdrop .modal-body{padding-top:18px;position:relative;}
+  .conf-copy-toast{
+    position:absolute;top:-4px;right:0;background:var(--navy-900);color:#fff;
+    font-size:12px;font-weight:600;padding:8px 14px;border-radius:8px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+    transform:translateY(-6px);z-index:5;white-space:nowrap;
+  }
+  .conf-copy-toast.show{opacity:1;transform:translateY(0);}
   .conf-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
   .conf-summary-pill{
     font-family:var(--font-mono);font-size:11.5px;font-weight:600;
@@ -253,11 +260,24 @@
   .conf-summary-pill.total{background:var(--navy-900);border-color:var(--navy-900);color:#fff;}
   .conf-summary-pill.cnh{background:#f1e9fb;border-color:rgba(124,58,237,.3);color:#7c3aed;}
   .conf-summary-pill.validade{background:var(--red-soft);border-color:rgba(229,72,77,.3);color:var(--red);}
-  #confModalBackdrop .table-wrap{border-radius:12px;max-height:min(52vh,460px);overflow-y:auto;}
-  #confModalBackdrop thead th{position:sticky;top:0;z-index:1;}
+  #confModalBackdrop .table-wrap{border-radius:12px;max-height:min(58vh,520px);overflow-y:auto;overflow-x:hidden;}
+  #confModalBackdrop table{min-width:0;width:100%;table-layout:fixed;}
+  #confModalBackdrop td, #confModalBackdrop th{white-space:normal;word-break:break-word;}
+  #confModalBackdrop thead th{position:sticky;top:0;z-index:2;}
   #confModalBackdrop tbody tr:nth-child(even){background:#fafbfd;}
   #confModalBackdrop tbody tr:hover{background:var(--amber-soft);}
+  #confModalBackdrop tbody tr.conf-group-row:hover{background:var(--navy-950);}
   #confModalBackdrop td.mono{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
+  #confModalBackdrop tr.conf-group-row td{
+    background:var(--navy-950);color:#fff;padding:8px 14px;cursor:default;
+  }
+  .conf-group-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .conf-group-name{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#fff;
+  }
+  .conf-group-count{
+    font-family:var(--font-mono);font-size:10.5px;color:var(--slate-400);flex:none;
+  }
   .conf-chip{
     display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;
     font-size:10.5px;font-weight:700;letter-spacing:.2px;margin:2px 4px 2px 0;cursor:default;white-space:nowrap;
@@ -577,7 +597,7 @@
 </div>
 
 <div class="modal-backdrop" id="confModalBackdrop">
-  <div class="modal-card" style="max-width:920px;">
+  <div class="modal-card" style="max-width:min(1180px,95vw);">
     <div class="modal-head">
       <div>
         <h2>Conferência — relCondutores.xlsx</h2>
@@ -586,6 +606,7 @@
       <button class="modal-close" id="confModalClose">✕</button>
     </div>
     <div class="modal-body">
+      <div id="confCopyToast" class="conf-copy-toast"></div>
       <div id="confSummary" class="conf-summary hidden"></div>
       <div id="confEmpty" class="state-msg hidden" style="padding:30px 0;">
         <strong>Tudo certo!</strong>
@@ -599,7 +620,6 @@
               <th>CPF</th>
               <th>CNH</th>
               <th>Validade cadastro</th>
-              <th>Filial</th>
               <th>Divergência</th>
             </tr>
           </thead>
@@ -664,6 +684,7 @@
     confSub: document.getElementById('confSub'),
     confEmpty: document.getElementById('confEmpty'),
     confSummary: document.getElementById('confSummary'),
+    confCopyToast: document.getElementById('confCopyToast'),
     confTableWrap: document.getElementById('confTableWrap'),
     confTbody: document.getElementById('confTbody'),
   };
@@ -1203,10 +1224,19 @@
   }
 
   function compararRelatorio(relatorioRows, condutorRows){
+    // Quando o mesmo CPF aparece mais de uma vez no painel (ex.: motorista com
+    // cadastro em mais de uma filial, ou CPF gravado com pontuação diferente em
+    // alguma aba), priorizamos sempre a versão que já tem DER validade preenchida
+    // — evita marcar "ausente" só porque um registro duplicado/sem dados venceu a
+    // disputa no mapa.
     const byCpf = {};
     condutorRows.forEach(r => {
       const k = normalizeCpf(r.cpf);
-      if(k) byCpf[k] = r;
+      if(!k) return;
+      const atual = byCpf[k];
+      if(!atual || (!atual.derVal && r.derVal)){
+        byCpf[k] = r;
+      }
     });
 
     const divergencias = [];
@@ -1275,16 +1305,33 @@
       ${countValidade ? `<span class="conf-summary-pill validade">${countValidade} com validade</span>` : ''}
     `;
     els.confTableWrap.classList.remove('hidden');
-    els.confTbody.innerHTML = ultimaConferencia.map(d => `
-      <tr>
-        <td class="name">${escapeHtml(d.nome)}</td>
-        <td class="mono">${escapeHtml(d.cpf)}</td>
-        <td class="mono">${escapeHtml(d.cnh)}</td>
-        <td class="mono">${escapeHtml(d.validade)}</td>
-        <td>${escapeHtml(d.filial)}</td>
-        <td>${d.motivos.map(motivoChip).join('')}</td>
-      </tr>
-    `).join('');
+
+    const grupos = {};
+    ultimaConferencia.forEach(d => {
+      const key = d.filial || 'Sem filial';
+      (grupos[key] = grupos[key] || []).push(d);
+    });
+    const filiais = Object.keys(grupos).sort((a,b) => a.localeCompare(b, 'pt-BR'));
+
+    els.confTbody.innerHTML = filiais.map(filial => {
+      const linhas = grupos[filial];
+      const head = `<tr class="conf-group-row"><td colspan="5">
+        <div class="conf-group-bar">
+          <span class="conf-group-name">${escapeHtml(filial)}</span>
+          <span class="conf-group-count">${linhas.length} motorista${linhas.length>1?'s':''}</span>
+        </div>
+      </td></tr>`;
+      const corpo = linhas.map(d => `
+        <tr data-nome="${escapeHtml(d.nome)}">
+          <td class="name">${escapeHtml(d.nome)}</td>
+          <td class="mono">${escapeHtml(d.cpf)}</td>
+          <td class="mono">${escapeHtml(d.cnh)}</td>
+          <td class="mono">${escapeHtml(d.validade)}</td>
+          <td>${d.motivos.map(motivoChip).join('')}</td>
+        </tr>
+      `).join('');
+      return head + corpo;
+    }).join('');
   }
 
   function openConferenciaModal(){
@@ -1294,6 +1341,27 @@
   function closeConferenciaModal(){
     els.confModalBackdrop.classList.remove('open');
   }
+
+  function showCopyToast(text){
+    const el = els.confCopyToast;
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(showCopyToast._t);
+    showCopyToast._t = setTimeout(() => el.classList.remove('show'), 1600);
+  }
+
+  els.confTbody.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-nome]');
+    if(!tr) return;
+    const nome = tr.dataset.nome;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(nome)
+        .then(() => showCopyToast('Copiado: ' + nome))
+        .catch(() => showCopyToast('Não foi possível copiar'));
+    } else {
+      showCopyToast('Cópia não suportada neste navegador');
+    }
+  });
 
   async function runConferencia(condutorRows){
     try{
